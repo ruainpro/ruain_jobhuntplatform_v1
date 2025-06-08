@@ -1,0 +1,49 @@
+# === Java ===
+*.class
+*.jar
+*.war
+*.ear
+*.log
+*.tmp
+*.swp
+*.swo
+
+# === Maven ===
+/target/
+.mvn/
+!/.mvn/wrapper/maven-wrapper.jar
+
+# === Eclipse / STS ===
+.project
+.classpath
+.settings/
+.apt_generated/
+.factorypath
+.loadpath
+.recommenders/
+.vscode/
+
+# === OS-specific ===
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# === Logs ===
+*.log
+
+# === IDEs ===
+# IntelliJ (if you or others use it)
+.idea/
+*.iml
+
+# === Build tools ===
+/build/
+
+# === Others ===
+/bin/
+/tmp/
+
