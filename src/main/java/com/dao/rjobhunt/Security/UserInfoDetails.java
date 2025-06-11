@@ -1,15 +1,15 @@
 package com.dao.rjobhunt.Security;
 
 
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import com.dao.rjobhunt.models.User;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class UserInfoDetails implements UserDetails {
 
@@ -59,6 +59,6 @@ public class UserInfoDetails implements UserDetails {
 	@Override
 	public String getPassword() {
 		// TODO Auto-generated method stub
-		return null;
+		return password;
 	}
 }

@@ -10,8 +10,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import com.dao.rjobhunt.models.AccountStatus;
-
 /**
  * DTO for transferring account status data to the frontend,
  * excluding internal persistence logic or database annotations.

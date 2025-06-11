@@ -1,11 +1,15 @@
 package com.dao.rjobhunt.models;
 
-import lombok.*;
+import java.time.LocalDateTime;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.time.LocalDateTime;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Document(collection = "accountStatus")
 @Data

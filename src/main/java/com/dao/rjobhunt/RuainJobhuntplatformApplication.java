@@ -11,5 +11,5 @@ public class RuainJobhuntplatformApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(RuainJobhuntplatformApplication.class, args);
 	}
-	
+
 }

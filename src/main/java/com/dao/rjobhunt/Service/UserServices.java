@@ -13,48 +13,49 @@ import com.dao.rjobhunt.models.AccountStatus;
 import com.dao.rjobhunt.models.User;
 import com.dao.rjobhunt.repository.UserInfoRepository;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
 public class UserServices {
-	
+
 	@Autowired
 	private UserInfoRepository userInfoRepository;
-	
+
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 
-	
-    public UserDto registerUser(User userMd) {
-        // Check for duplicate email
-        Optional<User> existing = userInfoRepository.findByEmail(userMd.getEmail());
-        if (existing.isPresent()) {
-            throw new IllegalArgumentException("Email already exists");
-        }
 
-        // Populate user fields
-        userMd.setPublicId(UUID.randomUUID());
-        userMd.setPassword(passwordEncoder.encode(userMd.getPassword()));
-        userMd.setRole("ROLE_USER");
-        userMd.setCreatedAt(LocalDateTime.now());
-        userMd.setUpdatedAt(LocalDateTime.now());
+	public UserDto registerUser(UserDto userDto) {
+	    // Check for duplicate email
+	    Optional<User> existing = userInfoRepository.findByEmail(userDto.getEmail());
+	    if (existing.isPresent()) {
+	        throw new IllegalArgumentException("Email already exists");
+	    }
 
-        // Attach account status with token
-        userMd.setAccountStatus(
-        	    AccountStatus.builder()
-        	        .accountStatusId(1)
-        	        .statusId(1)
-        	        .token(UUID.randomUUID().toString())
-        	        .createdAt(LocalDateTime.now())
-        	        .expiresAt(LocalDateTime.now().plusHours(24))
-        	        .build()
-        	);
+	    // Convert DTO to entity
+	    User user = userDto.toEntity();
 
-        // Save to MongoDB
-        userInfoRepository.save(userMd);
+	    // Set additional fields
+	    user.setPublicId(UUID.randomUUID());
+	    user.setPassword(passwordEncoder.encode(userDto.getPassword())); // You must add 'password' to UserDto or pass it separately
+	    user.setRole("ROLE_USER");
+	    user.setCreatedAt(LocalDateTime.now());
+	    user.setUpdatedAt(LocalDateTime.now());
 
-        // Return DTO
-        return UserDto.fromEntity(userMd, userMd.getAccountStatus());
-    }
+	    // Attach account status with token
+	    user.setAccountStatus(AccountStatus.builder()
+	            .accountStatusId(1)
+	            .statusId(0) // 0 = inactive
+	            .token(UUID.randomUUID().toString())
+	            .createdAt(LocalDateTime.now())
+	            .expiresAt(LocalDateTime.now().plusHours(24))
+	            .build()
+	    );
+
+	    // Save to MongoDB
+	    User savedUser = userInfoRepository.save(user);
+
+	    // Return as DTO
+	    return UserDto.fromEntity(savedUser, savedUser.getAccountStatus());
+	}
+
 
 }

@@ -47,3 +47,7 @@ src/
 pom.xml
 README.md
 
+## Documentation Link
+ Swagger:
+ http://localhost:8080/swagger-ui/index.html
+

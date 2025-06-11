@@ -1,15 +1,20 @@
 package com.dao.rjobhunt.models;
 
-import lombok.*;
+import java.time.LocalDateTime;
+import java.util.Date;
+import java.util.UUID;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.LocalDateTime;
-import java.util.Date;
-import java.util.UUID;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Document(collection = "user")
 @Data
@@ -23,18 +28,20 @@ public class User {
 
     private UUID publicId;
     private String email;
+    
+    @JsonIgnore
     private String password;
     private String role;
-    
-    private AccountStatus accountStatus; // ✅ Embedded document
 
-    
+    private AccountStatus accountStatus; // Embedded document
+
+
     @CreatedDate
     private LocalDateTime createdAt;
-    
+
     @LastModifiedDate
     private LocalDateTime updatedAt;
-    
+
     private String phoneNumber;
     private String gender;
     private Date dateOfBirth;
