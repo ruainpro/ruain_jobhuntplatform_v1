@@ -4,6 +4,7 @@ package com.dao.rjobhunt.Controller.authentication;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -13,6 +14,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -46,27 +48,20 @@ public class UserController {
 
 	@Autowired
     private AuthenticationManager authenticationManager;
+	
+	@Value("${admin.secret.code}")
+	private String adminCodeSecret; // Load from application.properties
 
     @GetMapping("/welcome")
     public String welcome() {
         return "Welcome this endpoint is not secure";
     }
 
-
-	/*
-	 * @PostMapping("/addNewUser") public ResponseEntity<ApiResponse<UserDto>>
-	 * register(@RequestBody User userMd) { try { UserDto dto =
-	 * userService.registerUser(userMd); return
-	 * ResponseEntity.ok(ApiResponse.success("User registered successfully", dto));
-	 * } catch (IllegalArgumentException e) { return
-	 * ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage())); } catch
-	 * (Exception e) { return ResponseEntity.internalServerError().body(ApiResponse.
-	 * error("Something went wrong")); } }
-	 */
     
     @PostMapping("/addNewUser")
-    public ResponseEntity<ApiResponse<UserDto>> register(@Valid @RequestBody UserDto userDto) {
+    public ResponseEntity<ApiResponse<UserDto>> registerUser(@Valid @RequestBody UserDto userDto) {
         try {
+        	userDto.setRole("ROLE_USER");
             UserDto dto = userService.registerUser(userDto);
             return ResponseEntity.ok(ApiResponse.success("User registered successfully", dto));
         } catch (IllegalArgumentException e) {
@@ -75,6 +70,33 @@ public class UserController {
             return ResponseEntity.internalServerError().body(ApiResponse.error("Something went wrong"));
         }
     }
+    
+
+    @PostMapping("/addNewAdmin")
+    public ResponseEntity<ApiResponse<UserDto>> registerAdmin(
+            @Valid @RequestBody UserDto userDto,
+            @RequestHeader("X-Admin-Code") String adminCode) {
+        try {
+            // Validate admin code
+            if (!adminCodeSecret.equals(adminCode)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(ApiResponse.error("Invalid admin code"));
+            }
+
+            // Set admin role before saving
+            userDto.setRole("ROLE_ADMIN");
+
+            // Register admin
+            UserDto dto = userService.registerUser(userDto); // must persist ROLE_ADMIN
+
+            return ResponseEntity.ok(ApiResponse.success("Admin registered successfully", dto));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ApiResponse.error("Something went wrong"));
+        }
+    }
+
 
 
 

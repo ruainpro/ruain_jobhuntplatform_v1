@@ -36,7 +36,7 @@ public class UserServices {
 	    // Set additional fields
 	    user.setPublicId(UUID.randomUUID());
 	    user.setPassword(passwordEncoder.encode(userDto.getPassword())); // You must add 'password' to UserDto or pass it separately
-	    user.setRole("ROLE_USER");
+
 	    user.setCreatedAt(LocalDateTime.now());
 	    user.setUpdatedAt(LocalDateTime.now());
 

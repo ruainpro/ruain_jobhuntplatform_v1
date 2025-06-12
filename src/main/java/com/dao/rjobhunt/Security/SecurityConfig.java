@@ -20,6 +20,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
+	
+    private static final String ADMIN_ENDPOINT = "/auth/addNewAdmin";
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter,
@@ -29,7 +31,7 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
 								"/swagger-resources/**", "/webjars/**", "/configuration/**")
-						.permitAll().requestMatchers("/auth/welcome", "/auth/addNewUser", "/auth/login","/auth/generateToken","/error").permitAll()
+						.permitAll().requestMatchers("/auth/welcome", "/auth/addNewUser", "/auth/login","/auth/generateToken","/error","/auth/addNewAdmin").permitAll()
 						.requestMatchers("/auth/user/**").hasAuthority("ROLE_USER").requestMatchers("/auth/admin/**")
 						.hasAuthority("ROLE_ADMIN").anyRequest().authenticated())
 				.sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

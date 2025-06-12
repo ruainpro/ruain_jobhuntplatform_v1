@@ -3,6 +3,7 @@ package com.dao.rjobhunt.Security;
 
 import java.io.IOException;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,7 +22,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final UserDetailsService userDetailsService;
     private final JwtService jwtService;
+    
 
+    private static final String ADMIN_ENDPOINT = "/auth/addNewAdmin";
+    
+	@Value("${admin.ipcode}")
+	private String allowedIp; // Load from application.properties
+	
     public JwtAuthFilter(UserDetailsService userDetailsService, JwtService jwtService) {
         this.userDetailsService = userDetailsService;
         this.jwtService = jwtService;
@@ -32,6 +39,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         
         String path = request.getRequestURI();
+        
+//        if (path.equals(ADMIN_ENDPOINT)) {
+//            String remoteIp = request.getRemoteAddr();
+//
+//            if (!remoteIp.equals(allowedIp)) {
+//                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+//                response.getWriter().write("Access denied from this IP");
+//                return;
+//            }
+//        }
+        
 
 
         // Exclude Swagger and OpenAPI endpoints
