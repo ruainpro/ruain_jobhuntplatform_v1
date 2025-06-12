@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dao.rjobhunt.Security.JwtService;
@@ -28,6 +29,7 @@ import com.dao.rjobhunt.models.User;
 import com.dao.rjobhunt.repository.UserInfoRepository;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -96,6 +98,25 @@ public class UserController {
             return ResponseEntity.internalServerError().body(ApiResponse.error("Something went wrong"));
         }
     }
+    
+    @Operation(summary = "Verify user email using token",
+            description = "Verifies a user account using the token sent via email. The token must be valid and not expired (24-hour limit).")
+    @GetMapping("/verify")
+    public ResponseEntity<ApiResponse<UserDto>> verifyUserByToken(
+            @Parameter(description = "Verification token from email", required = true)
+            @RequestParam("token") String token) {
+
+        try {
+            boolean verifiedUser = userService.verifyAccountByToken(token);
+            return ResponseEntity.ok(ApiResponse.success("User verified successfully", null));
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ApiResponse.error("Something went wrong"));
+        }
+    }
+
 
 
 

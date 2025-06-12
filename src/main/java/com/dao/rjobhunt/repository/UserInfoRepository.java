@@ -13,4 +13,6 @@ public interface UserInfoRepository extends MongoRepository<User, String> {
     Optional<User> findByEmail(String email); // Assumes 'email' is a field in UserInfo
 
 	Optional<User> findByPublicId(UUID publicId);
+
+	Optional<User> findByAccountStatus_Token(String token);
 }
