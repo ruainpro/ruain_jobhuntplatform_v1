@@ -1,0 +1,171 @@
+package com.dao.rjobhunt.Controller.authentication;
+
+
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.dao.rjobhunt.Security.JwtService;
+import com.dao.rjobhunt.Service.UserServices;
+import com.dao.rjobhunt.dto.ApiResponse;
+import com.dao.rjobhunt.dto.AuthRequest;
+import com.dao.rjobhunt.dto.AuthResponse;
+import com.dao.rjobhunt.dto.UserDto;
+import com.dao.rjobhunt.models.User;
+import com.dao.rjobhunt.repository.UserInfoRepository;
+
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
+@RestController
+@RequestMapping("/auth")
+@RequiredArgsConstructor
+public class UserController {
+
+
+	@Autowired
+	private UserServices userService;
+
+	@Autowired
+	private UserInfoRepository infoRepository;
+
+	@Autowired
+    private JwtService jwtService;
+
+	@Autowired
+    private AuthenticationManager authenticationManager;
+	
+	@Value("${admin.secret.code}")
+	private String adminCodeSecret; // Load from application.properties
+
+    @GetMapping("/welcome")
+    public String welcome() {
+        return "Welcome this endpoint is not secure";
+    }
+
+    
+    @PostMapping("/addNewUser")
+    public ResponseEntity<ApiResponse<UserDto>> registerUser(@Valid @RequestBody UserDto userDto) {
+        try {
+        	userDto.setRole("ROLE_USER");
+            UserDto dto = userService.registerUser(userDto);
+            return ResponseEntity.ok(ApiResponse.success("User registered successfully", dto));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ApiResponse.error("Something went wrong"));
+        }
+    }
+    
+
+    @PostMapping("/addNewAdmin")
+    public ResponseEntity<ApiResponse<UserDto>> registerAdmin(
+            @Valid @RequestBody UserDto userDto,
+            @RequestHeader("X-Admin-Code") String adminCode) {
+        try {
+            // Validate admin code
+            if (!adminCodeSecret.equals(adminCode)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(ApiResponse.error("Invalid admin code"));
+            }
+
+            // Set admin role before saving
+            userDto.setRole("ROLE_ADMIN");
+
+            // Register admin
+            UserDto dto = userService.registerUser(userDto); // must persist ROLE_ADMIN
+
+            return ResponseEntity.ok(ApiResponse.success("Admin registered successfully", dto));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ApiResponse.error("Something went wrong"));
+        }
+    }
+
+
+
+
+    @Operation(summary = "Authenticate user and return JWT token + role")
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<AuthResponse>> login(@RequestBody AuthRequest request) {
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+
+            if (!authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.fail("Invalid credentials"));
+            }
+
+            User user = infoRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+            Integer status = user.getAccountStatus() != null ? user.getAccountStatus().getStatusId() : 0;
+
+            if (status != 1) {
+                String message = switch (status) {
+                    case 0 -> "Account deactivated. Please check your email.";
+                    case 2 -> "Account suspended. Contact support.";
+                    default -> "Account inactive.";
+                };
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.fail(message));
+            }
+
+            // ✅ Embed role into JWT
+            String token = jwtService.generateTokenWithClaims(
+            	    user.getEmail(),
+            	    Map.of("role", user.getRole()) // e.g., "ROLE_ADMIN"
+            	);
+
+            //            String token = jwtService.generateToken(request.getEmail());
+
+            AuthResponse response = new AuthResponse(
+                user.getPublicId(),
+                user.getEmail(),
+                token,
+                user.getRole()
+            );
+
+            return ResponseEntity.ok(ApiResponse.success("Login successful", response));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.fail("Login failed: " + e.getMessage()));
+        }
+    }
+
+
+
+
+
+    // Removed the role checks here as they are already managed in SecurityConfig
+
+    @PostMapping("/generateToken")
+    public String authenticateAndGetToken(@RequestBody AuthRequest authRequest) {
+        Authentication authentication = authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(authRequest.getEmail(), authRequest.getPassword())
+        );
+        if (authentication.isAuthenticated()) {
+            return jwtService.generateToken(authRequest.getEmail());
+        } else {
+            throw new UsernameNotFoundException("Invalid user request!");
+        }
+    }
+}
