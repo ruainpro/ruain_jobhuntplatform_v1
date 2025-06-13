@@ -1,13 +1,11 @@
 package com.dao.rjobhunt.dto;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.UUID;
 
 import com.dao.rjobhunt.models.AccountStatus;
 import com.dao.rjobhunt.models.User;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.swagger.v3.oas.annotations.media.Schema;

@@ -5,7 +5,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import io.jsonwebtoken.io.IOException;
 
 import java.io.FileNotFoundException;
 import java.io.InputStream;
