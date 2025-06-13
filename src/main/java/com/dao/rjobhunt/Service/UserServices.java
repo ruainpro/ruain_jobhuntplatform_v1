@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
@@ -37,7 +38,8 @@ public class UserServices {
 	@Autowired
 	private SpringTemplateEngine templateEngine;
 
-//	private final RequestUtil requestUtil = new RequestUtil();
+	@Value("${frontend.base.url}")
+	private String frontendBaseUrl;
 	
 	@Autowired
 	private RequestUtil requestUtil;
@@ -70,7 +72,7 @@ public class UserServices {
 		User savedUser = userInfoRepository.save(user);
 
 		if (Objects.nonNull(savedUser)) {
-			String verificationLink = requestUtil.getBaseUrl() + "/auth/verify?token="
+			String verificationLink = frontendBaseUrl + "/verify?token="
 					+ savedUser.getAccountStatus().getToken();
 
 			Context context = new Context();
