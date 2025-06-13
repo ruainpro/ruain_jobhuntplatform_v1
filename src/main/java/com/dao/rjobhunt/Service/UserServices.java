@@ -37,7 +37,10 @@ public class UserServices {
 	@Autowired
 	private SpringTemplateEngine templateEngine;
 
-	private final RequestUtil requestUtil = new RequestUtil();
+//	private final RequestUtil requestUtil = new RequestUtil();
+	
+	@Autowired
+	private RequestUtil requestUtil;
 
 	public UserDto registerUser(UserDto userDto) {
 		// Check for duplicate email
@@ -60,6 +63,7 @@ public class UserServices {
 		// Attach account status with token
 		user.setAccountStatus(AccountStatus.builder().accountStatusId(1).statusId(0) // 0 = inactive
 				.token(UUID.randomUUID().toString()).createdAt(LocalDateTime.now())
+				.tokenType("verification")
 				.expiresAt(LocalDateTime.now().plusHours(24)).build());
 
 		// Save to MongoDB
@@ -101,10 +105,40 @@ public class UserServices {
 
 	    user.getAccountStatus().setStatusId(1); // Mark as verified
 	    user.getAccountStatus().setToken(null);
+	    user.getAccountStatus().setTokenType(null);
 	    boolean returnStatus= userInfoRepository.save(user) != null;
 
 	    return returnStatus;
 	}
+	
+	
+	public void generateAndSendNewPassword(String email) {
+	    User user = userInfoRepository.findByEmail(email)
+	            .orElseThrow(() -> new IllegalArgumentException("Email not found"));
+
+	    // Generate random password
+	    String newPassword = requestUtil.generateRandomPassword(10);  // Make sure this method is defined
+
+	    // Save encoded password
+	    user.setPassword(passwordEncoder.encode(newPassword));  // passwordEncoder must be autowired
+	    user.setUpdatedAt(LocalDateTime.now());               // optional: track change
+	    userInfoRepository.save(user);
+
+	    // Prepare Thymeleaf email context
+	    Context context = new Context();
+	    context.setVariable("USER_EMAIL", user.getEmail());
+	    context.setVariable("NEW_PASSWORD", newPassword);
+	    context.setVariable("CREATED_DATE", LocalDateTime.now().toString());
+
+	    try {
+	        String htmlContent = templateEngine.process("email/forgot_password", context); // must exist in `resources/templates/email`
+	        emailService.sendHtmlEmail(user.getEmail(), "Your New Password - RuAin", htmlContent);
+	    } catch (Exception e) {
+	        throw new RuntimeException("Error sending new password email", e);
+	    }
+	}
+
+
 
 
 }

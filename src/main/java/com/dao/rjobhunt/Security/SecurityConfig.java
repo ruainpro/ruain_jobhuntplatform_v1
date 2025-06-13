@@ -35,7 +35,7 @@ public class SecurityConfig {
 								"/swagger-resources/**", "/webjars/**", "/configuration/**")
 <<<<<<< HEAD
 						.permitAll().requestMatchers("/auth/welcome", "/auth/addNewUser", "/auth/login","/auth/generateToken",
-								"/error","/auth/addNewAdmin", "/auth/verify").permitAll()
+								"/error","/auth/addNewAdmin", "/auth/verify","/auth/forgot-password/**").permitAll()
 						.requestMatchers("/auth/user/**").hasAuthority("ROLE_USER").requestMatchers("/auth/admin/**")
 						.hasAuthority("ROLE_ADMIN").anyRequest().authenticated())
 =======

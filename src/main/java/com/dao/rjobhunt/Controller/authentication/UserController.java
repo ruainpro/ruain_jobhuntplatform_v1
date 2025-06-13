@@ -171,6 +171,18 @@ public class UserController {
                 .body(ApiResponse.fail("Login failed: " + e.getMessage()));
         }
     }
+    
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<String>> forgotPassword(@RequestParam String email) {
+        try {
+            userService.generateAndSendNewPassword(email);  // New method
+            return ResponseEntity.ok(ApiResponse.success("New password has been sent to your email", null));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ApiResponse.error("Something went wrong"));
+        }
+    }
 
 
 
