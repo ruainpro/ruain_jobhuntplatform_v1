@@ -114,7 +114,7 @@ public class UserServices {
 	}
 	
 	
-	public void generateAndSendNewPassword(String email) {
+	public User generateAndSendNewPassword(String email) {
 	    User user = userInfoRepository.findByEmail(email)
 	            .orElseThrow(() -> new IllegalArgumentException("Email not found"));
 
@@ -138,6 +138,8 @@ public class UserServices {
 	    } catch (Exception e) {
 	        throw new RuntimeException("Error sending new password email", e);
 	    }
+	    
+	    return user;
 	}
 
 
