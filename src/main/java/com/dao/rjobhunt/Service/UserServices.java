@@ -1,8 +1,6 @@
 package com.dao.rjobhunt.Service;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,7 +19,6 @@ import com.dao.rjobhunt.others.RequestUtil;
 import com.dao.rjobhunt.repository.UserInfoRepository;
 
 import jakarta.mail.MessagingException;
-import jakarta.validation.constraints.NotNull;
 
 @Service
 public class UserServices {
