@@ -2,6 +2,7 @@ package com.dao.rjobhunt.Security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -20,20 +21,24 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
-	
-    private static final String ADMIN_ENDPOINT = "/auth/addNewAdmin";
+
+	private static final String ADMIN_ENDPOINT = "/auth/addNewAdmin";
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter,
 			AuthenticationProvider authenticationProvider) throws Exception {
 
 		http.csrf(csrf -> csrf.disable())
-				.authorizeHttpRequests(auth -> auth
+				.authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // ADD THIS
+																											// LINE
 						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
 								"/swagger-resources/**", "/webjars/**", "/configuration/**")
-						.permitAll().requestMatchers("/auth/welcome", "/auth/addNewUser", "/auth/login","/auth/generateToken","/error","/auth/addNewAdmin").permitAll()
-						.requestMatchers("/auth/user/**").hasAuthority("ROLE_USER").requestMatchers("/auth/admin/**")
-						.hasAuthority("ROLE_ADMIN").anyRequest().authenticated())
+						.permitAll()
+						.requestMatchers("/auth/welcome", "/auth/addNewUser", "/auth/login", "/auth/generateToken",
+								"/error", "/auth/addNewAdmin")
+						.permitAll().requestMatchers("/auth/user/**").hasAuthority("ROLE_USER")
+						.requestMatchers("/auth/admin/**").hasAuthority("ROLE_ADMIN").anyRequest().authenticated())
+
 				.sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authenticationProvider(authenticationProvider)
 				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -47,11 +52,12 @@ public class SecurityConfig {
 	}
 
 	@Bean
-	public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService, PasswordEncoder encoder) {
-	    DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-	    provider.setUserDetailsService(userDetailsService);
-	    provider.setPasswordEncoder(encoder);
-	    return provider;
+	public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService,
+			PasswordEncoder encoder) {
+		DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+		provider.setUserDetailsService(userDetailsService);
+		provider.setPasswordEncoder(encoder);
+		return provider;
 	}
 
 	@Bean
