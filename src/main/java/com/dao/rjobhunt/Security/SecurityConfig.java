@@ -29,23 +29,14 @@ public class SecurityConfig {
 			AuthenticationProvider authenticationProvider) throws Exception {
 
 		http.csrf(csrf -> csrf.disable())
-				.authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // ADD THIS
-																											// LINE
+				.authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
 								"/swagger-resources/**", "/webjars/**", "/configuration/**")
-<<<<<<< HEAD
-						.permitAll().requestMatchers("/auth/welcome", "/auth/addNewUser", "/auth/login","/auth/generateToken",
-								"/error","/auth/addNewAdmin", "/auth/verify","/auth/forgot-password/**").permitAll()
-						.requestMatchers("/auth/user/**").hasAuthority("ROLE_USER").requestMatchers("/auth/admin/**")
-						.hasAuthority("ROLE_ADMIN").anyRequest().authenticated())
-=======
 						.permitAll()
 						.requestMatchers("/auth/welcome", "/auth/addNewUser", "/auth/login", "/auth/generateToken",
-								"/error", "/auth/addNewAdmin")
+								"/auth/addNewAdmin", "/auth/verify", "/auth/forgot-password/**", "/error")
 						.permitAll().requestMatchers("/auth/user/**").hasAuthority("ROLE_USER")
 						.requestMatchers("/auth/admin/**").hasAuthority("ROLE_ADMIN").anyRequest().authenticated())
-
->>>>>>> feature_RJV-42
 				.sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authenticationProvider(authenticationProvider)
 				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
