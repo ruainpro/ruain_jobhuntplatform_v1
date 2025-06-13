@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -40,6 +41,11 @@ public class UserDto {
     private String password;
 
     @Schema(description = "User phone number", example = "+1234567890")
+    @NotBlank(message = "Phone number cannot be blank")
+    @Pattern(
+       regexp = "^\\+?[1-9]\\d{1,14}$",
+        message = "Phone number must be in international format, e.g., +1234567890"
+    )
     private String phoneNumber;
 
     @Schema(description = "Gender of the user", example = "Male/Female/Other")

@@ -32,7 +32,7 @@ public class SecurityConfig {
 						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
 								"/swagger-resources/**", "/webjars/**", "/configuration/**")
 						.permitAll().requestMatchers("/auth/welcome", "/auth/addNewUser", "/auth/login","/auth/generateToken",
-								"/error","/auth/addNewAdmin", "/auth/verify").permitAll()
+								"/error","/auth/addNewAdmin", "/auth/verify","/auth/forgot-password/**").permitAll()
 						.requestMatchers("/auth/user/**").hasAuthority("ROLE_USER").requestMatchers("/auth/admin/**")
 						.hasAuthority("ROLE_ADMIN").anyRequest().authenticated())
 				.sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
