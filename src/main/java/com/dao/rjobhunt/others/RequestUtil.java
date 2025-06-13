@@ -10,13 +10,18 @@ import io.jsonwebtoken.io.IOException;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 
-
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 
 
 @Component
 public class RequestUtil {
+	
+
+    @Value("${app.security.password.charset}")
+    private String passwordCharset;
 
     public String getBaseUrl() {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
@@ -32,7 +37,7 @@ public class RequestUtil {
     }
 
     
-    public static String loadTemplate(String path) throws java.io.IOException {
+    public  String loadTemplate(String path) throws java.io.IOException {
         ClassPathResource resource = new ClassPathResource(path);
         if (!resource.exists()) {
             throw new FileNotFoundException("Template not found at path: " + path);
@@ -45,5 +50,15 @@ public class RequestUtil {
             return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
         }
     }
+    
+    public String generateRandomPassword(int length) {
+        SecureRandom random = new SecureRandom();
+        StringBuilder password = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            password.append(passwordCharset.charAt(random.nextInt(passwordCharset.length())));
+        }
+        return password.toString();
+    }
+
     
 }

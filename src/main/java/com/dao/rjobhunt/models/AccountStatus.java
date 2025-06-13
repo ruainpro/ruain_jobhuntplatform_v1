@@ -28,10 +28,17 @@ public class AccountStatus {
 
     @Schema(description = "Verification token string", example = "a1b2c3d4e5")
     private String token;
+    
+    @Schema(description = "Verification token for what verify or forgot", example = "Verify or forgot")
+    private String tokenType;
 
     @Schema(description = "Token creation timestamp", example = "2025-06-10T14:30:00")
     private LocalDateTime createdAt;
 
     @Schema(description = "Token expiry timestamp", example = "2025-06-10T15:30:00")
     private LocalDateTime expiresAt;
+    
+    @Schema(description = "request count", example = "1,2,3")
+    private int RequestCount;
+
 }
