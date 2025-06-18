@@ -194,6 +194,20 @@ public class UserController {
         }
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<String>> logout(HttpServletResponse response) {
+        ResponseCookie clearedCookie = ResponseCookie.from("jwt", "")
+            .httpOnly(true)
+            .secure(true)
+            .path("/")
+            .maxAge(0) // remove immediately
+            .build();
+
+        response.setHeader(HttpHeaders.SET_COOKIE, clearedCookie.toString());
+
+        return ResponseEntity.ok(ApiResponse.success("Logged out successfully", null));
+    }
+
 
 
 

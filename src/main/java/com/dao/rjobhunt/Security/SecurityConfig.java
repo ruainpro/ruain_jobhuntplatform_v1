@@ -39,6 +39,7 @@ public class SecurityConfig {
 					"/auth/welcome",
 					"/auth/addNewUser",
 					"/auth/login",
+					"/auth/logout",
 					"/auth/generateToken",
 					"/auth/addNewAdmin",
 					"/auth/verify",
