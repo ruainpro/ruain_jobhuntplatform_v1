@@ -1,11 +1,13 @@
 package com.dao.rjobhunt.Controller.authentication;
 
 
+import java.time.Duration;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpHeaders;
+
 
 import com.dao.rjobhunt.Security.JwtService;
 import com.dao.rjobhunt.Service.UserServices;
@@ -30,6 +34,7 @@ import com.dao.rjobhunt.repository.UserInfoRepository;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -120,10 +125,12 @@ public class UserController {
 
 
 
-
     @Operation(summary = "Authenticate user and return JWT token + role")
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<AuthResponse>> login(@RequestBody AuthRequest request) {
+    public ResponseEntity<ApiResponse<AuthResponse>> login(
+            @RequestBody AuthRequest request,
+            HttpServletResponse response) {
+
         try {
             Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
@@ -149,22 +156,25 @@ public class UserController {
                     .body(ApiResponse.fail(message));
             }
 
-            // ✅ Embed role into JWT
+            // Generate JWT with claims
             String token = jwtService.generateTokenWithClaims(
-            	    user.getEmail(),
-            	    Map.of("role", user.getRole()) // e.g., "ROLE_ADMIN"
-            	);
-
-            //            String token = jwtService.generateToken(request.getEmail());
-
-            AuthResponse response = new AuthResponse(
-                user.getPublicId(),
                 user.getEmail(),
-                token,
-                user.getRole()
+                Map.of("role", user.getRole())
             );
 
-            return ResponseEntity.ok(ApiResponse.success("Login successful", response));
+            // Send token in HttpOnly cookie
+            ResponseCookie jwtCookie = ResponseCookie.from("jwt", token)
+                .httpOnly(true)
+                .secure(true) // set to false for local testing if not using HTTPS
+                .path("/")
+                .maxAge(Duration.ofHours(3))
+                .build();
+
+            response.setHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
+
+            AuthResponse res = new AuthResponse(user.getPublicId(), user.getEmail(), token, user.getRole());
+
+            return ResponseEntity.ok(ApiResponse.success("Login successful", res));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)

@@ -23,6 +23,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class User {
 
+    @JsonIgnore
     @Id
     private String userId;
 
