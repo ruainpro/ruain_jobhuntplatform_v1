@@ -67,4 +67,13 @@ public class AuthIntegrationTest {
         assertThat(logoutCookieHeader).contains("jwt=");
         assertThat(logoutCookieHeader).contains("Max-Age=0");
     }
+    
+    
+    @Test
+    void testLogoutWithoutCookie() throws Exception {
+        mockMvc.perform(post("/auth/logout"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Logged out successfully"));
+    }
 }
