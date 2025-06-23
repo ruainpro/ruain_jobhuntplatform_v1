@@ -60,6 +60,7 @@ public class UserController {
 	@Value("${admin.secret.code}")
 	private String adminCodeSecret; // Load from application.properties
 
+<<<<<<< HEAD
 	@GetMapping("/welcome")
 	public String welcome() {
 		return "Welcome this endpoint is not secure";
@@ -201,4 +202,169 @@ public class UserController {
 			throw new UsernameNotFoundException("Invalid user request!");
 		}
 	}
+=======
+    @GetMapping("/welcome")
+    public String welcome() {
+        return "Welcome this endpoint is not secure";
+    }
+
+    
+    @PostMapping("/addNewUser")
+    public ResponseEntity<ApiResponse<UserDto>> registerUser(@Valid @RequestBody UserDto userDto) {
+        try {
+        	userDto.setRole("ROLE_USER");
+            UserDto dto = userService.registerUser(userDto);
+            return ResponseEntity.ok(ApiResponse.success("User registered successfully", dto));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ApiResponse.error("Something went wrong"));
+        }
+    }
+    
+
+    @PostMapping("/addNewAdmin")
+    public ResponseEntity<ApiResponse<UserDto>> registerAdmin(
+            @Valid @RequestBody UserDto userDto,
+            @RequestHeader("X-Admin-Code") String adminCode) {
+        try {
+            // Validate admin code
+            if (!adminCodeSecret.equals(adminCode)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(ApiResponse.error("Invalid admin code"));
+            }
+
+            // Set admin role before saving
+            userDto.setRole("ROLE_ADMIN");
+
+            // Register admin
+            UserDto dto = userService.registerUser(userDto); // must persist ROLE_ADMIN
+
+            return ResponseEntity.ok(ApiResponse.success("Admin registered successfully", dto));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ApiResponse.error("Something went wrong"));
+        }
+    }
+    
+    @Operation(summary = "Verify user email using token",
+            description = "Verifies a user account using the token sent via email. The token must be valid and not expired (24-hour limit).")
+    @GetMapping("/verify")
+    public ResponseEntity<ApiResponse<UserDto>> verifyUserByToken(
+            @Parameter(description = "Verification token from email", required = true)
+            @RequestParam("token") String token) {
+
+        try {
+            boolean verifiedUser = userService.verifyAccountByToken(token);
+            return ResponseEntity.ok(ApiResponse.success("User verified successfully", null));
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ApiResponse.error("Something went wrong"));
+        }
+    }
+
+
+
+
+    @Operation(summary = "Authenticate user and return JWT token + role")
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<AuthResponse>> login(
+            @RequestBody AuthRequest request,
+            HttpServletResponse response) {
+
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+
+            if (!authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.fail("Invalid credentials"));
+            }
+
+            User user = infoRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+            Integer status = user.getAccountStatus() != null ? user.getAccountStatus().getStatusId() : 0;
+
+            if (status != 1) {
+                String message = switch (status) {
+                    case 0 -> "Account deactivated. Please check your email.";
+                    case 2 -> "Account suspended. Contact support.";
+                    default -> "Account inactive.";
+                };
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.fail(message));
+            }
+
+            // Generate JWT with claims
+            String token = jwtService.generateTokenWithClaims(
+                user.getEmail(),
+                Map.of("role", user.getRole())
+            );
+
+            // Send token in HttpOnly cookie
+            ResponseCookie jwtCookie = ResponseCookie.from("jwt", token)
+                .httpOnly(true)
+                .secure(true) // set to false for local testing if not using HTTPS
+                .path("/")
+                .maxAge(Duration.ofHours(3))
+                .build();
+
+            response.setHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
+
+            AuthResponse res = new AuthResponse(user.getPublicId(), user.getEmail(), token, user.getRole());
+
+            return ResponseEntity.ok(ApiResponse.success("Login successful", res));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.fail("Login failed: " + e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<String>> logout(HttpServletResponse response) {
+        ResponseCookie clearedCookie = ResponseCookie.from("jwt", "")
+            .httpOnly(true)
+            .secure(true)
+            .path("/")
+            .maxAge(0) // remove immediately
+            .build();
+
+        response.setHeader(HttpHeaders.SET_COOKIE, clearedCookie.toString());
+
+        return ResponseEntity.ok(ApiResponse.success("Logged out successfully", null));
+    }
+    
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<String>> forgotPassword(@RequestParam String email) {
+        try {
+            userService.generateAndSendNewPassword(email);  // New method
+            return ResponseEntity.ok(ApiResponse.success("New password has been sent to your email", null));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ApiResponse.error("Something went wrong"));
+        }
+    }
+
+
+    // Removed the role checks here as they are already managed in SecurityConfig
+
+    @PostMapping("/generateToken")
+    public String authenticateAndGetToken(@RequestBody AuthRequest authRequest) {
+        Authentication authentication = authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(authRequest.getEmail(), authRequest.getPassword())
+        );
+        if (authentication.isAuthenticated()) {
+            return jwtService.generateToken(authRequest.getEmail());
+        } else {
+            throw new UsernameNotFoundException("Invalid user request!");
+        }
+    }
+>>>>>>> 18af054ab6f1075e98701a214b4f2c7c1be9918f
 }
