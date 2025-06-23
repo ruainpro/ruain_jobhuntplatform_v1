@@ -1,6 +1,5 @@
 package com.dao.rjobhunt.Controller.authentication;
 
-
 import java.time.Duration;
 import java.util.Map;
 
@@ -22,8 +21,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.HttpHeaders;
 
-
 import com.dao.rjobhunt.Security.JwtService;
+import com.dao.rjobhunt.Service.ActionHistoryServices;
 import com.dao.rjobhunt.Service.UserServices;
 import com.dao.rjobhunt.dto.ApiResponse;
 import com.dao.rjobhunt.dto.AuthRequest;
@@ -43,7 +42,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class UserController {
 
-
 	@Autowired
 	private UserServices userService;
 
@@ -51,161 +49,156 @@ public class UserController {
 	private UserInfoRepository infoRepository;
 
 	@Autowired
-    private JwtService jwtService;
+	private JwtService jwtService;
 
 	@Autowired
-    private AuthenticationManager authenticationManager;
-	
+	private AuthenticationManager authenticationManager;
+
+	@Autowired
+	private ActionHistoryServices actionHistoryServices;
+
 	@Value("${admin.secret.code}")
 	private String adminCodeSecret; // Load from application.properties
 
-    @GetMapping("/welcome")
-    public String welcome() {
-        return "Welcome this endpoint is not secure";
-    }
+	@GetMapping("/welcome")
+	public String welcome() {
+		return "Welcome this endpoint is not secure";
+	}
 
-    
-    @PostMapping("/addNewUser")
-    public ResponseEntity<ApiResponse<UserDto>> registerUser(@Valid @RequestBody UserDto userDto) {
-        try {
-        	userDto.setRole("ROLE_USER");
-            UserDto dto = userService.registerUser(userDto);
-            return ResponseEntity.ok(ApiResponse.success("User registered successfully", dto));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(ApiResponse.error("Something went wrong"));
-        }
-    }
-    
+	@PostMapping("/addNewUser")
+	public ResponseEntity<ApiResponse<UserDto>> registerUser(@Valid @RequestBody UserDto userDto) {
+		try {
+			userDto.setRole("ROLE_USER");
+			UserDto dto = userService.registerUser(userDto);
+			
+			actionHistoryServices.addActionHistory(null, dto.getEmail()+":User Registration");
+			
+			return ResponseEntity.ok(ApiResponse.success("User registered successfully", dto));
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+		} catch (Exception e) {
+			return ResponseEntity.internalServerError().body(ApiResponse.error("Something went wrong"));
+		}
+	}
 
-    @PostMapping("/addNewAdmin")
-    public ResponseEntity<ApiResponse<UserDto>> registerAdmin(
-            @Valid @RequestBody UserDto userDto,
-            @RequestHeader("X-Admin-Code") String adminCode) {
-        try {
-            // Validate admin code
-            if (!adminCodeSecret.equals(adminCode)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(ApiResponse.error("Invalid admin code"));
-            }
+	@PostMapping("/addNewAdmin")
+	public ResponseEntity<ApiResponse<UserDto>> registerAdmin(@Valid @RequestBody UserDto userDto,
+			@RequestHeader("X-Admin-Code") String adminCode) {
+		try {
+			// Validate admin code
+			if (!adminCodeSecret.equals(adminCode)) {
+				return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error("Invalid admin code"));
+			}
 
-            // Set admin role before saving
-            userDto.setRole("ROLE_ADMIN");
+			// Set admin role before saving
+			userDto.setRole("ROLE_ADMIN");
 
-            // Register admin
-            UserDto dto = userService.registerUser(userDto); // must persist ROLE_ADMIN
+			// Register admin
+			UserDto dto = userService.registerUser(userDto); // must persist ROLE_ADMIN
+			
+			actionHistoryServices.addActionHistory(null, dto.getEmail()+":Admin Registration");
 
-            return ResponseEntity.ok(ApiResponse.success("Admin registered successfully", dto));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(ApiResponse.error("Something went wrong"));
-        }
-    }
-    
-    @Operation(summary = "Verify user email using token",
-            description = "Verifies a user account using the token sent via email. The token must be valid and not expired (24-hour limit).")
-    @GetMapping("/verify")
-    public ResponseEntity<ApiResponse<UserDto>> verifyUserByToken(
-            @Parameter(description = "Verification token from email", required = true)
-            @RequestParam("token") String token) {
+			return ResponseEntity.ok(ApiResponse.success("Admin registered successfully", dto));
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+		} catch (Exception e) {
+			return ResponseEntity.internalServerError().body(ApiResponse.error("Something went wrong"));
+		}
+	}
 
-        try {
-            boolean verifiedUser = userService.verifyAccountByToken(token);
-            return ResponseEntity.ok(ApiResponse.success("User verified successfully", null));
+	@Operation(summary = "Verify user email using token", description = "Verifies a user account using the token sent via email. The token must be valid and not expired (24-hour limit).")
+	@GetMapping("/verify")
+	public ResponseEntity<ApiResponse<UserDto>> verifyUserByToken(
+			@Parameter(description = "Verification token from email", required = true) @RequestParam("token") String token) {
 
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(ApiResponse.error("Something went wrong"));
-        }
-    }
+		try {
+			boolean verifiedUser = userService.verifyAccountByToken(token);
+			
+			return ResponseEntity.ok(ApiResponse.success("User verified successfully", null));
 
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+		} catch (Exception e) {
+			return ResponseEntity.internalServerError().body(ApiResponse.error("Something went wrong"));
+		}
+	}
 
+	@Operation(summary = "Authenticate user and return JWT token + role")
+	@PostMapping("/login")
+	public ResponseEntity<ApiResponse<AuthResponse>> login(@RequestBody AuthRequest request,
+			HttpServletResponse response) {
 
+		try {
+			Authentication authentication = authenticationManager
+					.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
-    @Operation(summary = "Authenticate user and return JWT token + role")
-    @PostMapping("/login")
-    public ResponseEntity<ApiResponse<AuthResponse>> login(
-            @RequestBody AuthRequest request,
-            HttpServletResponse response) {
+			if (!authentication.isAuthenticated()) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.fail("Invalid credentials"));
+			}
 
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-            );
+			User user = infoRepository.findByEmail(request.getEmail())
+					.orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-            if (!authentication.isAuthenticated()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.fail("Invalid credentials"));
-            }
+			Integer status = user.getAccountStatus() != null ? user.getAccountStatus().getStatusId() : 0;
 
-            User user = infoRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+			if (status != 1) {
+				String message = switch (status) {
+				case 0 -> "Account deactivated. Please check your email.";
+				case 2 -> "Account suspended. Contact support.";
+				default -> "Account inactive.";
+				};
+				return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.fail(message));
+			}
 
-            Integer status = user.getAccountStatus() != null ? user.getAccountStatus().getStatusId() : 0;
+			// Generate JWT with claims
+			String token = jwtService.generateTokenWithClaims(user.getEmail(), Map.of("role", user.getRole()));
 
-            if (status != 1) {
-                String message = switch (status) {
-                    case 0 -> "Account deactivated. Please check your email.";
-                    case 2 -> "Account suspended. Contact support.";
-                    default -> "Account inactive.";
-                };
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.fail(message));
-            }
+			// Send token in HttpOnly cookie
+			ResponseCookie jwtCookie = ResponseCookie.from("jwt", token).httpOnly(true).secure(true) // set to false for
+																										// local testing
+																										// if not using
+																										// HTTPS
+					.path("/").maxAge(Duration.ofHours(3)).build();
 
-            // Generate JWT with claims
-            String token = jwtService.generateTokenWithClaims(
-                user.getEmail(),
-                Map.of("role", user.getRole())
-            );
+			response.setHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
 
-            // Send token in HttpOnly cookie
-            ResponseCookie jwtCookie = ResponseCookie.from("jwt", token)
-                .httpOnly(true)
-                .secure(true) // set to false for local testing if not using HTTPS
-                .path("/")
-                .maxAge(Duration.ofHours(3))
-                .build();
+			AuthResponse res = new AuthResponse(user.getPublicId(), user.getEmail(), token, user.getRole());
 
-            response.setHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
+			actionHistoryServices.addActionHistory(user.getUserId(), "User Login");
+			
+			return ResponseEntity.ok(ApiResponse.success("Login successful", res));
 
-            AuthResponse res = new AuthResponse(user.getPublicId(), user.getEmail(), token, user.getRole());
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+					.body(ApiResponse.fail("Login failed: " + e.getMessage()));
+		}
+	}
 
-            return ResponseEntity.ok(ApiResponse.success("Login successful", res));
+	@PostMapping("/forgot-password")
+	public ResponseEntity<ApiResponse<String>> forgotPassword(@RequestParam String email) {
+		try {
+			userService.generateAndSendNewPassword(email); // New method
+			
+			actionHistoryServices.addActionHistory(null, email+":User forgotPassword");
+			return ResponseEntity.ok(ApiResponse.success("New password has been sent to your email", null));
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+		} catch (Exception e) {
+			return ResponseEntity.internalServerError().body(ApiResponse.error("Something went wrong"));
+		}
+	}
 
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.fail("Login failed: " + e.getMessage()));
-        }
-    }
-    
-    @PostMapping("/forgot-password")
-    public ResponseEntity<ApiResponse<String>> forgotPassword(@RequestParam String email) {
-        try {
-            userService.generateAndSendNewPassword(email);  // New method
-            return ResponseEntity.ok(ApiResponse.success("New password has been sent to your email", null));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(ApiResponse.error("Something went wrong"));
-        }
-    }
+	// Removed the role checks here as they are already managed in SecurityConfig
 
-
-    // Removed the role checks here as they are already managed in SecurityConfig
-
-    @PostMapping("/generateToken")
-    public String authenticateAndGetToken(@RequestBody AuthRequest authRequest) {
-        Authentication authentication = authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(authRequest.getEmail(), authRequest.getPassword())
-        );
-        if (authentication.isAuthenticated()) {
-            return jwtService.generateToken(authRequest.getEmail());
-        } else {
-            throw new UsernameNotFoundException("Invalid user request!");
-        }
-    }
+	@PostMapping("/generateToken")
+	public String authenticateAndGetToken(@RequestBody AuthRequest authRequest) {
+		Authentication authentication = authenticationManager.authenticate(
+				new UsernamePasswordAuthenticationToken(authRequest.getEmail(), authRequest.getPassword()));
+		if (authentication.isAuthenticated()) {
+			actionHistoryServices.addActionHistory(null, authRequest.getEmail()+":User forgotPassword");
+			return jwtService.generateToken(authRequest.getEmail());
+		} else {
+			throw new UsernameNotFoundException("Invalid user request!");
+		}
+	}
 }
