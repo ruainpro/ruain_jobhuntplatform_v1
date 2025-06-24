@@ -9,6 +9,8 @@ import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.annotation.Transient;
+
 
 import java.time.Instant;
 
@@ -27,6 +29,7 @@ public class ActionHistory {
     private String publicId;
 
     @Schema(hidden = true)
+    @JsonIgnore
     private String userId;
 
     @NotBlank
@@ -53,4 +56,13 @@ public class ActionHistory {
 
     @Schema(description = "Browser and device information", example = "Chrome on Windows 11")
     private String deviceInfo;
+    
+    @Transient
+    private String userEmail;
+    
+    @Transient
+    private String userRole;
+    
+    @Transient
+    private String userPublicId;
 }

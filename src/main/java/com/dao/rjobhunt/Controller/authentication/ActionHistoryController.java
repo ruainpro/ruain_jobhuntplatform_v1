@@ -43,10 +43,10 @@ public class ActionHistoryController {
 	)
 	@GetMapping
 	@PreAuthorize("hasRole('ADMIN')")
-	public ResponseEntity<ApiResponse<List<ActionHistory>>> getAllActions() {
-		List<ActionHistory> actions = actionHistoryServices.getAllActions();
-		return ResponseEntity.ok(ApiResponse.success("All actions retrieved", actions));
-	}
+    public ResponseEntity<ApiResponse<List<ActionHistory>>> getAllActions() {
+        List<ActionHistory> actions = actionHistoryServices.getAllActionsWithUserInfo();
+        return ResponseEntity.ok(ApiResponse.success("All actions retrieved with user info", actions));
+    }
 
 	@Operation(
 		summary = "Get user's own action history",
