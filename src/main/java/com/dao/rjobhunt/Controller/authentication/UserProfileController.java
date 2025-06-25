@@ -24,6 +24,7 @@ import java.text.SimpleDateFormat;
 import java.text.ParseException;
 
 import com.dao.rjobhunt.Security.JwtService;
+import com.dao.rjobhunt.Service.ActionHistoryServices;
 import com.dao.rjobhunt.Service.UserServices;
 import com.dao.rjobhunt.dto.ApiResponse;
 import com.dao.rjobhunt.dto.UserDto;
@@ -44,6 +45,9 @@ public class UserProfileController {
 	
 	@Autowired
 	private UserInfoRepository infoRepository;
+	
+	@Autowired
+	private ActionHistoryServices actionHistoryServices;
 
 	@Operation(summary = "Get user by publicId", description = "Returns user details by public UUID. This avoids exposing internal _id.")
 	@GetMapping()
@@ -65,7 +69,8 @@ public class UserProfileController {
 				return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
 						.body(ApiResponse.error("Invalid or missing JWT token"));
 			}
-
+			
+			actionHistoryServices.addActionHistory(publicId,  ":User Updateds profile");
 			// Update user via service
 			User updatedUser = userServices.updateUserByPublicId(UUID.fromString(publicId), userDto);
 			return ResponseEntity.ok(ApiResponse.success("Profile updated successfully", updatedUser));
@@ -121,6 +126,7 @@ public class UserProfileController {
 			}
 
 			User updatedUser = userServices.updateUserByPublicId(UUID.fromString(publicId), userDto);
+			actionHistoryServices.addActionHistory(updatedUser.getPublicId().toString(),  ":Admin Updated User profile");
 			return ResponseEntity.ok(ApiResponse.success("User updated successfully", updatedUser));
 
 		} catch (IllegalArgumentException e) {
