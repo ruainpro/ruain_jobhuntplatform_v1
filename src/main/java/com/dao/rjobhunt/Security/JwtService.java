@@ -82,12 +82,14 @@ public class JwtService {
 		return claims.get("publicId", String.class);
 	}
 
+	
 	private Key getSignKey() {
 		byte[] keyBytes = Decoders.BASE64.decode(SECRET);
 		return Keys.hmacShaKeyFor(keyBytes);
 	}
 
 	public String extractUsername(String token) {
+		
 		return extractClaim(token, Claims::getSubject);
 	}
 

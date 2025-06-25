@@ -1,23 +1,34 @@
 package com.dao.rjobhunt.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
+import com.dao.rjobhunt.dto.ApiResponse;
 import com.dao.rjobhunt.dto.UserDto;
 import com.dao.rjobhunt.models.AccountStatus;
+import com.dao.rjobhunt.models.ActionHistory;
 import com.dao.rjobhunt.models.User;
 import com.dao.rjobhunt.others.RequestUtil;
 import com.dao.rjobhunt.repository.UserInfoRepository;
 
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.mail.MessagingException;
 
 @Service
@@ -138,8 +149,44 @@ public class UserServices {
 	    
 	    return user;
 	}
+	
+	public List<User> getAllUsers() {
+	    return userInfoRepository.findAll();
+	}
 
+	// Way to get the user details by public id
+	public Optional<User> getUserByPublicId(UUID id) {
+		
+		return userInfoRepository.findByPublicId(id);
+	}
+	
+	public User updateUserByPublicId(UUID publicId, UserDto userDto) {
+	    User existingUser = userInfoRepository.findByPublicId(publicId)
+	        .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
+	    // Update only non-null fields from DTO
+	    if (userDto.getEmail() != null) {
+	        existingUser.setEmail(userDto.getEmail());
+	    }
+	    if (userDto.getPhoneNumber() != null) {
+	        existingUser.setPhoneNumber(userDto.getPhoneNumber());
+	    }
+	    if (userDto.getGender() != null) {
+	        existingUser.setGender(userDto.getGender());
+	    }
+	    if (userDto.getDateOfBirth() != null) {
+	        existingUser.setDateOfBirth(userDto.getDateOfBirth());
+	    }
+	    if (userDto.getAddress() != null) {
+	        existingUser.setAddress(userDto.getAddress());
+	    }
+
+	    // Save updated user
+	    User updatedUser = userInfoRepository.save(existingUser);
+
+	    // Return sanitized DTO
+	    return updatedUser;
+	}
 
 
 }
