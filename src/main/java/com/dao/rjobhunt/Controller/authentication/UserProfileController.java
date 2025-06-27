@@ -81,6 +81,21 @@ public class UserProfileController {
 					.body(ApiResponse.error("Something went wrong: " + e.getMessage()));
 		}
 	}
+	
+    @PatchMapping("/deactivateAccount")
+    public ResponseEntity<?> updateStatusOfAccount(  ) {
+        try {
+			String publicId = jwtService.getPublicIdFromCurrentRequest();
+			if (publicId == null) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+						.body(ApiResponse.error("Invalid or missing JWT token"));
+			}
+            User updated = userServices.updateAccountStatusByPublicId(UUID.fromString(publicId), 2);
+            return ResponseEntity.ok("Account status updated for user with publicId: " + updated.getPublicId());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
 	@Operation(summary = "Get all users (Admin only)", description = "Returns a list of all users in the system. Requires ROLE_ADMIN")
 	@GetMapping("/all")
@@ -136,5 +151,32 @@ public class UserProfileController {
 					.body(ApiResponse.error("Failed to update user: " + e.getMessage()));
 		}
 	}
+	
+	
+    @PatchMapping("/admin/deactivateAccount")
+	@PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> updateStatusByPublicId(
+            @RequestParam String publicId
+    ) {
+        try {
+            User updated = userServices.updateAccountStatusByPublicId(UUID.fromString(publicId), 2);
+            return ResponseEntity.ok("Account status updated for user with publicId: " + updated.getPublicId());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+    
+    @PatchMapping("/admin/activateAccount")
+	@PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> activateAccount(
+            @RequestParam String publicId
+    ) {
+        try {
+            User updated = userServices.updateAccountStatusByPublicId(UUID.fromString(publicId), 1);
+            return ResponseEntity.ok("Account status updated for user with publicId: " + updated.getPublicId());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
 }

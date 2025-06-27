@@ -187,6 +187,18 @@ public class UserServices {
 	    // Return sanitized DTO
 	    return updatedUser;
 	}
+	
+    public User updateAccountStatusByPublicId(UUID publicId, int updateValue) {
+        Optional<User> optionalUser = userInfoRepository.findByPublicId(publicId);
+        if (optionalUser.isEmpty()) {
+            throw new IllegalArgumentException("User not found with publicId: " + publicId);
+        }
+
+        User user = optionalUser.get();
+        user.getAccountStatus().setStatusId(updateValue);
+        user.setUpdatedAt(java.time.LocalDateTime.now());
+        return userInfoRepository.save(user);
+    }
 
 
 }
