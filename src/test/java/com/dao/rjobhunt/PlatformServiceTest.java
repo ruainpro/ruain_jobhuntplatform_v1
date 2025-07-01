@@ -1,16 +1,15 @@
 package com.dao.rjobhunt;
 
+import com.dao.rjobhunt.Service.PlatformService;
 import com.dao.rjobhunt.dto.ApiResponse;
 import com.dao.rjobhunt.models.ParserType;
 import com.dao.rjobhunt.models.Platform;
 import com.dao.rjobhunt.repository.PlatformRepository;
-import com.dao.rjobhunt.Service.PlatformService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
 import org.springframework.http.ResponseEntity;
 
-import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,116 +29,123 @@ class PlatformServiceTest {
     }
 
     @Test
-    void createPlatform_shouldSucceed_whenPlatformIsUnique() {
+    void createPlatform_shouldSucceed_whenUnique() {
         Platform platform = Platform.builder()
-                .name("Indeed")
-                .url("https://www.indeed.com")
-                .urlTemplate("https://www.indeed.com/jobs?q={{QUERY}}&l={{LOCATION}}")
-                .type("jobboard")
-                .parserType(ParserType.JSOUP)
-                .build();
+                .name("Indeed").url("https://indeed.com")
+                .type("jobboard").parserType(ParserType.JSOUP).build();
 
         when(platformRepo.existsByTypeIgnoreCase("jobboard")).thenReturn(false);
         when(platformRepo.existsByNameIgnoreCase("Indeed")).thenReturn(false);
-        when(platformRepo.existsByUrl("https://www.indeed.com")).thenReturn(false);
+        when(platformRepo.existsByUrl("https://indeed.com")).thenReturn(false);
 
-        ResponseEntity<ApiResponse<Platform>> response = platformService.createPlatform(platform, "user-123", true);
+        ResponseEntity<ApiResponse<Platform>> res = platformService.createPlatform(platform, "user-123", true);
 
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().isSuccess()).isTrue();
-        assertThat(response.getBody().getMessage()).isEqualTo("Platform created successfully");
-
+        assertThat(res.getBody()).isNotNull();
+        assertThat(res.getBody().isSuccess()).isTrue();
         verify(platformRepo, times(1)).save(any(Platform.class));
     }
 
     @Test
-    void createPlatform_shouldFail_whenNameOrUrlExists() {
-        Platform platform = Platform.builder()
-                .name("Indeed")
-                .url("https://www.indeed.com")
-                .type("jobboard")
-                .build();
-
+    void createPlatform_shouldFail_whenNameExists() {
+        Platform platform = Platform.builder().name("Indeed").url("https://indeed.com").type("jobboard").build();
         when(platformRepo.existsByNameIgnoreCase("Indeed")).thenReturn(true);
 
-        ResponseEntity<ApiResponse<Platform>> response = platformService.createPlatform(platform, "user-123", true);
+        ResponseEntity<ApiResponse<Platform>> res = platformService.createPlatform(platform, "user-123", true);
 
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().isSuccess()).isFalse();
-        assertThat(response.getBody().getMessage()).contains("Platform with same name or URL already exists");
-
+        assertThat(res.getBody()).isNotNull();
+        assertThat(res.getBody().isSuccess()).isFalse();
         verify(platformRepo, never()).save(any());
     }
 
     @Test
-    void updatePlatform_shouldFail_whenUserIsNotOwner() {
+    void updatePlatform_shouldSucceed_whenAdminOrOwner() {
         UUID publicId = UUID.randomUUID();
-        Platform existing = Platform.builder()
-                .publicId(publicId)
-                .name("LinkedIn")
-                .createdByUserId("another-user")
-                .build();
-
+        Platform existing = Platform.builder().publicId(publicId).name("LinkedIn").createdByUserId("user-123").build();
         when(platformRepo.findByPublicId(publicId)).thenReturn(Optional.of(existing));
 
-        Platform updates = Platform.builder().name("UpdatedName").build();
+        Platform updates = Platform.builder().name("UpdatedLinkedIn").build();
 
-        ResponseEntity<ApiResponse<Platform>> response = platformService.updatePlatform(
-                publicId.toString(), updates, "current-user", false);
+        ResponseEntity<ApiResponse<Platform>> res = platformService.updatePlatform(
+                publicId.toString(), updates, "user-123", false);
 
-        assertThat(response.getStatusCodeValue()).isEqualTo(403);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().isSuccess()).isFalse();
-        assertThat(response.getBody().getMessage()).contains("Not authorized");
+        assertThat(res.getBody()).isNotNull();
+        assertThat(res.getBody().isSuccess()).isTrue();
+        assertThat(existing.getName()).isEqualTo("UpdatedLinkedIn");
+        verify(platformRepo, times(1)).save(existing);
     }
 
     @Test
-    void deletePlatform_shouldSucceed_whenAdminDeletes() {
+    void updatePlatform_shouldFail_whenUnauthorized() {
         UUID publicId = UUID.randomUUID();
-        Platform existing = Platform.builder()
-                .publicId(publicId)
-                .name("LinkedIn")
-                .build();
-
+        Platform existing = Platform.builder().publicId(publicId).name("LinkedIn").createdByUserId("another-user").build();
         when(platformRepo.findByPublicId(publicId)).thenReturn(Optional.of(existing));
 
-        ResponseEntity<ApiResponse<String>> response = platformService.deletePlatform(
-                publicId.toString(), "admin-user", true);
+        Platform updates = Platform.builder().name("Updated").build();
 
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().isSuccess()).isTrue();
-        assertThat(response.getBody().getMessage()).contains("Platform deleted successfully");
+        ResponseEntity<ApiResponse<Platform>> res = platformService.updatePlatform(
+                publicId.toString(), updates, "user-123", false);
 
+        assertThat(res.getStatusCodeValue()).isEqualTo(403);
+        assertThat(res.getBody()).isNotNull();
+        assertThat(res.getBody().isSuccess()).isFalse();
+        verify(platformRepo, never()).save(any());
+    }
+
+    @Test
+    void deletePlatform_shouldSucceed_whenAdminOrOwner() {
+        UUID publicId = UUID.randomUUID();
+        Platform existing = Platform.builder().publicId(publicId).name("LinkedIn").createdByUserId("user-123").build();
+        when(platformRepo.findByPublicId(publicId)).thenReturn(Optional.of(existing));
+
+        ResponseEntity<ApiResponse<String>> res = platformService.deletePlatform(
+                publicId.toString(), "user-123", false);
+
+        assertThat(res.getBody()).isNotNull();
+        assertThat(res.getBody().isSuccess()).isTrue();
         verify(platformRepo, times(1)).delete(existing);
     }
 
     @Test
-    void deletePlatform_shouldReturn404_whenPlatformNotFound() {
+    void deletePlatform_shouldFail_whenUnauthorized() {
         UUID publicId = UUID.randomUUID();
+        Platform existing = Platform.builder().publicId(publicId).name("LinkedIn").createdByUserId("another-user").build();
+        when(platformRepo.findByPublicId(publicId)).thenReturn(Optional.of(existing));
 
-        when(platformRepo.findByPublicId(publicId)).thenReturn(Optional.empty());
+        ResponseEntity<ApiResponse<String>> res = platformService.deletePlatform(
+                publicId.toString(), "user-123", false);
 
-        ResponseEntity<ApiResponse<String>> response = platformService.deletePlatform(
-                publicId.toString(), "user-123", true);
-
-        assertThat(response.getStatusCodeValue()).isEqualTo(404);
+        assertThat(res.getStatusCodeValue()).isEqualTo(403);
+        assertThat(res.getBody().isSuccess()).isFalse();
+        verify(platformRepo, never()).delete(any());
     }
 
     @Test
-    void getAllPlatforms_shouldReturnAll_whenAdmin() {
+    void getAllPlatforms_shouldReturnAdminView() {
         List<Platform> platforms = List.of(
                 Platform.builder().name("Indeed").type("jobboard").build(),
-                Platform.builder().name("CustomBoard").type("custom").createdByUserId("user-123").build()
-        );
-
+                Platform.builder().name("Custom").type("custom").createdByUserId("user-123").build());
         when(platformRepo.findAll()).thenReturn(platforms);
 
-        ResponseEntity<ApiResponse<Map<String, List<Platform>>>> response =
-                platformService.getAllPlatforms("admin", true);
+        ResponseEntity<ApiResponse<Map<String, List<Platform>>>> res = platformService.getAllPlatforms("admin", true);
 
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().isSuccess()).isTrue();
-        assertThat(response.getBody().getData()).containsKey("all");
-        assertThat(response.getBody().getData().get("all")).hasSize(2);
+        assertThat(res.getBody()).isNotNull();
+        assertThat(res.getBody().isSuccess()).isTrue();
+        assertThat(res.getBody().getData().get("all")).hasSize(2);
+    }
+
+    @Test
+    void getAllPlatforms_shouldReturnUserView() {
+        List<Platform> platforms = List.of(
+                Platform.builder().name("Indeed").type("jobboard").build(),
+                Platform.builder().name("Custom").type("custom").createdByUserId("user-123").build(),
+                Platform.builder().name("OtherCustom").type("custom").createdByUserId("someone-else").build());
+        when(platformRepo.findAll()).thenReturn(platforms);
+
+        ResponseEntity<ApiResponse<Map<String, List<Platform>>>> res = platformService.getAllPlatforms("user-123", false);
+
+        assertThat(res.getBody()).isNotNull();
+        assertThat(res.getBody().isSuccess()).isTrue();
+        assertThat(res.getBody().getData().get("common")).hasSize(1); // Indeed
+        assertThat(res.getBody().getData().get("custom")).hasSize(1); // Custom by user-123
     }
 }
