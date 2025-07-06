@@ -1,0 +1,17 @@
+selectors:
+  title:
+    - "h2.jobTitle span"
+  company:
+    - "span[data-testid=company-name]"
+    - "span.companyName"
+  location:
+    - "div.companyLocation"
+  salary:
+    - "div.salary-snippet"
+  snippet:
+    - "div.job-snippet"
+semanticChecks:
+  title:
+    mustContainKeywords:
+      - "engineer"
+      - "developer"

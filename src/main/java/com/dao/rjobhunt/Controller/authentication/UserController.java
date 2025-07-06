@@ -140,10 +140,14 @@ public class UserController {
 					Map.of("role", user.getRole(), "publicId", user.getPublicId().toString() // Store safe public UUID
 					));
 
-			ResponseCookie jwtCookie = ResponseCookie.from("jwt", token).httpOnly(true).secure(true).path("/")
-					.maxAge(Duration.ofHours(3)).build();
-
-			response.setHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
+			ResponseCookie jwtCookie = ResponseCookie.from("jwt", token)
+				    .httpOnly(true)
+				    .secure(false) // or true in production with HTTPS
+				    .sameSite("None") // critical: allow cross-site cookie use
+				    .path("/")
+				    .maxAge(Duration.ofHours(3))
+				    .build();
+				response.setHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
 
 			AuthResponse res = new AuthResponse(user.getPublicId(), user.getEmail(), token, user.getRole());
 			actionHistoryServices.addActionHistory(user.getUserId(), "User Login");
