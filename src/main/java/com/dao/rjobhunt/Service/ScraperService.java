@@ -32,8 +32,14 @@ public class ScraperService {
     private final ScraperRequestRepository scraperRequestRepo;
     private final IndeedScraperService indeedScraperService;
 
-    @Autowired private JwtService jwtService;
-    @Autowired private ActionHistoryServices actionHistoryServices;
+//    private final JwtService jwtService;
+//    private final ActionHistoryServices actionHistoryServices;
+//    
+    @Autowired
+    private JwtService jwtService;
+    
+    @Autowired
+    private ActionHistoryServices actionHistoryServices;
 
     private final ExecutorService executorService = Executors.newCachedThreadPool();
     private final Map<String, Future<?>> activeTasks = new ConcurrentHashMap<>();
@@ -57,6 +63,7 @@ public class ScraperService {
             Platform platform = platformRepo.findByPublicId(platformUuid)
                     .orElseThrow(() -> new IllegalArgumentException("Platform not found with ID: " + request.getPlatformId()));
 
+            
             // Stop any existing task first
             stopScraping(userId);
 
@@ -82,6 +89,9 @@ public class ScraperService {
             });
 
             activeTasks.put(userId, task);
+            
+            // ✅ Save the ScraperRequest here automatically
+            createScraperRequest(request);
 
             return ResponseEntity.ok(ApiResponse.success("Async scraping started for user " + userId, null));
         } catch (Exception e) {
@@ -158,12 +168,21 @@ public class ScraperService {
 
     public ResponseEntity<ApiResponse<ScraperRequest>> createScraperRequest(ScraperRequest request) {
         try {
-            ScraperRequest saved = scraperRequestRepo.save(request);
             String userId = jwtService.getPublicIdFromCurrentRequest();
+            UUID userUuid = UUID.fromString(userId);
+
+            // Populate required fields
+            request.setPublicId(UUID.randomUUID());
+            request.setUserId(userUuid);
+            request.setCreatedDate(new Date());
+
+            ScraperRequest saved = scraperRequestRepo.save(request);
+
             actionHistoryServices.addActionHistory(
                 userId,
                 "[Scraper] Created ScraperRequest with PublicId: " + saved.getPublicId()
             );
+
             return ResponseEntity.ok(ApiResponse.success("ScraperRequest created successfully", saved));
         } catch (Exception e) {
             log.error("❌ Failed to create ScraperRequest", e);

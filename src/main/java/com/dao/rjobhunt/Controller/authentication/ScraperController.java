@@ -47,6 +47,7 @@ public class ScraperController {
     public ResponseEntity<ApiResponse<String>> startScraping(@RequestBody ScraperRequest request) {
         try {
             String userId = jwtService.getPublicIdFromCurrentRequest();
+            request.setUserId(UUID.fromString(userId));
             ResponseEntity<ApiResponse<String>> response = scraperService.startScraping(request);
 //            actionHistoryServices.addActionHistory(userId, "[Scraper] Started scraping");
             log.info("🚀 Scraping started for user {}", userId);
