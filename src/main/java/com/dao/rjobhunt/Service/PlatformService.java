@@ -4,6 +4,7 @@ import com.dao.rjobhunt.dto.ApiResponse;
 import com.dao.rjobhunt.models.Platform;
 import com.dao.rjobhunt.repository.PlatformRepository;
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +18,8 @@ public class PlatformService {
     private final PlatformRepository platformRepo;
 
     public ResponseEntity<ApiResponse<Map<String, List<Platform>>>> getAllPlatforms(String userId, boolean isAdmin) {
+    	
+    	
         List<Platform> all = platformRepo.findAll();
 
         if (isAdmin) {
@@ -34,7 +37,7 @@ public class PlatformService {
         Map<String, List<Platform>> response = new HashMap<>();
         response.put("common", common);
         response.put("custom", custom);
-
+        
         return ResponseEntity.ok(ApiResponse.success("Platforms retrieved for user", response));
     }
 
@@ -43,19 +46,37 @@ public class PlatformService {
         platform.setCreatedByUserId(userId);
         platform.setCreatedDate(LocalDateTime.now());
 
+        // -----------------------------
+        // Validate duplicate (type+parserType+url) for non-custom types
+        // -----------------------------
         if (!"custom".equalsIgnoreCase(platform.getType())) {
-            if (platformRepo.existsByTypeIgnoreCase(platform.getType())) {
+            boolean exists = platformRepo.existsByTypeIgnoreCaseAndParserTypeAndUrlIgnoreCase(
+                platform.getType(), platform.getParserType(), platform.getUrl()
+            );
+            if (exists) {
                 return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("A platform with this type already exists."));
+                    .body(ApiResponse.error("Platform with same type, parserType, and URL already exists."));
             }
         }
 
-        if (platformRepo.existsByNameIgnoreCase(platform.getName()) || platformRepo.existsByUrl(platform.getUrl())) {
+        // -----------------------------
+        // Validate name or URL duplicates globally (you had this already)
+        // -----------------------------
+        if (platformRepo.existsByNameIgnoreCase(platform.getName())) {
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Platform with same name or URL already exists."));
+                .body(ApiResponse.error("Platform with the same name already exists."));
+        }
+        if (platformRepo.existsByUrl(platform.getUrl())) {
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("Platform with the same URL already exists."));
+        }
+
+        if (platform.getIsActive() != null) {
+            platform.setIsActive(platform.getIsActive());
         }
 
         platformRepo.save(platform);
+    
         return ResponseEntity.ok(ApiResponse.success("Platform created successfully", platform));
     }
 
@@ -87,10 +108,12 @@ public class PlatformService {
         if (updates.getSelectors() != null && !updates.getSelectors().isEmpty()) existing.setSelectors(updates.getSelectors());
         if (updates.getDetectionYaml() != null && !updates.getDetectionYaml().isBlank()) existing.setDetectionYaml(updates.getDetectionYaml());
 
-        existing.setActive(updates.isActive());
-
+        if (updates.getIsActive() != null) {
+            existing.setIsActive(updates.getIsActive());
+        }
+        
         platformRepo.save(existing);
-
+        
         return ResponseEntity.ok(ApiResponse.success("Platform updated successfully", existing));
     }
 

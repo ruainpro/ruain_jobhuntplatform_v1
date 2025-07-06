@@ -37,20 +37,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
-        
-        String path = request.getRequestURI();
-        
-//        if (path.equals(ADMIN_ENDPOINT)) {
-//            String remoteIp = request.getRemoteAddr();
-//
-//            if (!remoteIp.equals(allowedIp)) {
-//                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-//                response.getWriter().write("Access denied from this IP");
-//                return;
-//            }
-//        }
-        
 
+        String path = request.getRequestURI();
 
         // Exclude Swagger and OpenAPI endpoints
         if (path.startsWith("/v3/api-docs") || path.startsWith("/swagger-ui") ||
@@ -60,14 +48,27 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        
-    	String authHeader = request.getHeader("Authorization");
+        String authHeader = request.getHeader("Authorization");
         String token = null;
         String username = null;
 
+        // 1️⃣ Try Authorization header
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
             username = jwtService.extractUsername(token);
+        }
+
+        // 2️⃣ Fallback: try HTTP-only cookie for SSE support
+        if (token == null) {
+            if (request.getCookies() != null) {
+                for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
+                    if ("jwt".equals(cookie.getName())) {
+                        token = cookie.getValue();
+                        username = jwtService.extractUsername(token);
+                        break;
+                    }
+                }
+            }
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {

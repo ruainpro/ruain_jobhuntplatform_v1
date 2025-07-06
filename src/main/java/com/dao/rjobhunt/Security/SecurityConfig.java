@@ -29,27 +29,20 @@ public class SecurityConfig {
 			AuthenticationProvider authenticationProvider) throws Exception {
 
 		http.csrf(csrf -> csrf.disable())
-		.authorizeHttpRequests(auth -> auth
-				.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-				.requestMatchers(
-					"/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
-					"/swagger-resources/**", "/webjars/**", "/configuration/**"
-				).permitAll()
-				.requestMatchers(
-					"/auth/welcome",
-					"/auth/addNewUser",
-					"/auth/login",
-					"/auth/generateToken",
-					"/auth/addNewAdmin",
-					"/auth/verify",
-					"/auth/forgot-password/**",
-					"/error"
-				).permitAll()
-				.requestMatchers("/auth/user/**").hasAuthority("ROLE_USER")
-				.requestMatchers("/auth/admin/**").hasAuthority("ROLE_ADMIN")
-				.anyRequest().authenticated()
-			)
-				.sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
+								"/swagger-resources/**", "/webjars/**", "/configuration/**")
+						.permitAll()
+						.requestMatchers("/auth/welcome", "/auth/addNewUser", "/auth/login", "/auth/generateToken",
+								"/auth/addNewAdmin", "/auth/verify", "/auth/forgot-password/**", "/error", "/api/scraper/stream/**")
+						.permitAll().requestMatchers("/auth/user/**").hasAuthority("ROLE_USER")
+						.requestMatchers("/auth/admin/**").hasAuthority("ROLE_ADMIN")
+
+						// ✅ Explicitly require authentication on SSE streams
+
+						.anyRequest().authenticated()
+
+				).sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authenticationProvider(authenticationProvider)
 				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
