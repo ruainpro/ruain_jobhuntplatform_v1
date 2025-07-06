@@ -1,6 +1,5 @@
 package com.dao.rjobhunt.Service;
 
-import com.dao.rjobhunt.Security.JwtService;
 import com.dao.rjobhunt.models.Job;
 import com.dao.rjobhunt.webscrapper.UserAgentProvider;
 import com.fasterxml.jackson.databind.*;
@@ -43,6 +42,8 @@ public class IndeedScraperService {
         boolean keepGoing = true;
 
         while (keepGoing) {
+        	
+        	
             int start = page * 10;
             String targetUrl = "https://ca.indeed.com/jobs?q=" +
                     java.net.URLEncoder.encode(query + " " + location, StandardCharsets.UTF_8) +

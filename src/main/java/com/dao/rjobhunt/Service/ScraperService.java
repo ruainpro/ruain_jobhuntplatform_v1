@@ -8,11 +8,15 @@ import com.dao.rjobhunt.models.Platform;
 import com.dao.rjobhunt.models.ScraperRequest;
 import com.dao.rjobhunt.repository.PlatformRepository;
 import com.dao.rjobhunt.repository.ScraperRequestRepository;
+import com.mongodb.client.result.DeleteResult;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -34,6 +38,9 @@ public class ScraperService {
     private final ExecutorService executorService = Executors.newCachedThreadPool();
     private final Map<String, Future<?>> activeTasks = new ConcurrentHashMap<>();
     private List<Job> lastScrapedJobs = new ArrayList<>();
+    
+    @Autowired
+    private MongoTemplate mongoTemplate;
 
     // =======================
     // SCRAPING CONTROL
@@ -124,6 +131,7 @@ public class ScraperService {
                                 1,
                                 platform.getApiKey(),
                                 request.getUserId().toString()
+                                
                         );
                     } else {
                         throw new UnsupportedOperationException("Only API parser supported currently for Indeed.");
@@ -227,7 +235,27 @@ public class ScraperService {
             return ResponseEntity.internalServerError().body(ApiResponse.error("Failed to update ScraperRequest: " + e.getMessage()));
         }
     }
+    
+    public ResponseEntity<ApiResponse<String>> deleteScraperRequestsByCurrentUser(String userId) {
+        if (userId == null || userId.isBlank()) {
+            throw new IllegalArgumentException("No authenticated user found");
+        }
 
+        UUID userUuid = UUID.fromString(userId);
+
+        // Build query matching the Binary UUID
+        Query query = Query.query(Criteria.where("userId").is(userUuid));
+
+        // Execute deletion and capture the result
+        DeleteResult result = mongoTemplate.remove(query, ScraperRequest.class);
+
+        long deletedCount = result.getDeletedCount();
+
+        return ResponseEntity.ok(
+            ApiResponse.success("Deleted " + deletedCount + " scraper request(s) for current user", null)
+        );
+    }
+    
     public ResponseEntity<ApiResponse<String>> deleteScraperRequest(UUID publicId) {
         try {
             String userId = jwtService.getPublicIdFromCurrentRequest();

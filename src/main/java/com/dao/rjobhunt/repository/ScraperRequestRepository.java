@@ -16,4 +16,6 @@ public interface ScraperRequestRepository extends MongoRepository<ScraperRequest
     Optional<ScraperRequest> findByPublicId(UUID publicId);  // ✅ FIXED
 
 	List<ScraperRequest> findByUserId(UUID userUuid);
+
+	long deleteByUserId(String userId);
 }

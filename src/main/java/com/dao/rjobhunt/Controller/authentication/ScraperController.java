@@ -33,9 +33,6 @@ public class ScraperController {
     @Autowired
     private ScraperService scraperService;
 
-    @Autowired
-    private ActionHistoryServices actionHistoryServices;
-
     private final SseService sseService;
 
     @Autowired
@@ -167,6 +164,19 @@ public class ScraperController {
         } catch (Exception e) {
             log.error("❌ Failed to delete ScraperRequest", e);
             return ResponseEntity.internalServerError().body(ApiResponse.error("Failed to delete ScraperRequest: " + e.getMessage()));
+        }
+    }
+    
+    @Operation(summary = "Delete all ScraperRequests for current user", description = "Deletes all ScraperRequests created by the current authenticated user.")
+    @DeleteMapping("/requests/my")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<String>> deleteScraperRequestsByCurrentUser() {
+        try {
+            String userId = jwtService.getPublicIdFromCurrentRequest();
+            return scraperService.deleteScraperRequestsByCurrentUser(userId);
+        } catch (Exception e) {
+            log.error("❌ Failed to delete all ScraperRequests for current user", e);
+            return ResponseEntity.internalServerError().body(ApiResponse.error("Failed to delete all ScraperRequests: " + e.getMessage()));
         }
     }
 }
