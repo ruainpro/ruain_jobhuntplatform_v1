@@ -23,7 +23,7 @@ import java.util.UUID;
 public class Platform {
 
     @Id
-    @JsonIgnore
+//    @JsonIgnore
     @Schema(hidden = true, description = "MongoDB internal platform ID")
     private String platformId;
 
@@ -55,11 +55,15 @@ public class Platform {
     private ParserType parserType;
 
     @Schema(description = "Whether this platform is currently active for scraping")
-    private boolean isActive;
+    private Boolean isActive;
 
     @Schema(description = "Optional notes about this platform")
     private String notes;
 
+    @Schema(description = "API key is api platform used")
+    private String apiKey;
+    
+    
     @Schema(description = "ID of the user who created this platform; null for admin-created platforms")
     private String createdByUserId;
 

@@ -11,20 +11,18 @@ import com.dao.rjobhunt.others.RequestMetadataInterceptor;
 @Configuration
 public class CorsGlobalConfig implements WebMvcConfigurer {
 
-    @Autowired
-    private RequestMetadataInterceptor requestMetadataInterceptor;
+	@Autowired
+	private RequestMetadataInterceptor requestMetadataInterceptor;
 
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")
-                .allowedOrigins("http://localhost:5173")
-                .allowedMethods("GET", "POST", "PUT", "DELETE","PATCH", "OPTIONS")
-                .allowedHeaders("*")
-                .allowCredentials(true);
-    }
+	@Override
+	public void addCorsMappings(CorsRegistry registry) {
+		registry.addMapping("/**").allowedOrigins("http://localhost:5173")
+				.allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS").allowedHeaders("*")
+				.allowCredentials(true);
+	}
 
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(requestMetadataInterceptor).addPathPatterns("/**");
-    }
+	@Override
+	public void addInterceptors(InterceptorRegistry registry) {
+		registry.addInterceptor(requestMetadataInterceptor).addPathPatterns("/**");
+	}
 }
