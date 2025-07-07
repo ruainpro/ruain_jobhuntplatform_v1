@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.text.ParseException;
 
 import com.dao.rjobhunt.Security.JwtService;
@@ -46,6 +47,8 @@ public class UserProfileController {
 	
 	@Autowired
 	private ActionHistoryServices actionHistoryServices;
+	
+	
 
 	@Operation(summary = "Get user by publicId", description = "Returns user details by public UUID. This avoids exposing internal _id.")
 	@GetMapping()
@@ -175,6 +178,34 @@ public class UserProfileController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+    
+    // For user preference setting
+    
+    @Operation(summary = "Get preferred job titles of logged-in user")
+    @GetMapping("/preferences/job-titles")
+    public ResponseEntity<ApiResponse<List<String>>> getPreferredJobTitles() {
+        String publicId = jwtService.getPublicIdFromCurrentRequest();
+        User user = userServices.getUserByPublicId(UUID.fromString(publicId))
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        return ResponseEntity.ok(ApiResponse.success("Preferred job titles fetched", user.getPreferredJobTitles()));
+    }
+
+    @Operation(summary = "Add preferred job titles for logged-in user")
+    @PatchMapping("/preferences/job-titles")
+    public ResponseEntity<ApiResponse<List<String>>> addJobTitles(@RequestBody List<String> jobTitles) {
+        String publicId = jwtService.getPublicIdFromCurrentRequest();
+        List<String> result = userServices.addPreferredJobTitlesDynamically(UUID.fromString(publicId), jobTitles);
+        return ResponseEntity.ok(ApiResponse.success("Preferred job titles updated", result));
+    }
+
+    @Operation(summary = "Delete one or all preferred job titles for logged-in user")
+    @PatchMapping("/preferences/job-titles/delete")
+    public ResponseEntity<ApiResponse<List<String>>> deleteJobTitles(@RequestParam(required = false) String jobTitle) {
+        String publicId = jwtService.getPublicIdFromCurrentRequest();
+        List<String> result = userServices.deletePreferredJobTitlesDynamically(UUID.fromString(publicId), jobTitle);
+        return ResponseEntity.ok(ApiResponse.success("Preferred job titles updated", result));
     }
 
 }
