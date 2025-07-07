@@ -2,6 +2,7 @@ package com.dao.rjobhunt.models;
 
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.annotation.CreatedDate;
@@ -47,4 +48,7 @@ public class User {
     private String gender;
     private Date dateOfBirth;
     private String address;
+    
+    private List<String> preferredJobTitles;
+
 }
