@@ -132,26 +132,30 @@ public class ScraperService {
                 throw new InterruptedException("Scraping manually stopped");
             }
 
-            List<Job> jobsForPage = switch (platform.getName().toLowerCase()) {
-                case String s when s.startsWith("inde") -> {
-                    if (platform.getParserType().equals(ParserType.API)) {
-                        yield indeedScraperService.scrapeIndeed(
-                                request.getQuery(),
-                                request.getLocation(),
-                                1,
-                                platform.getApiKey(),
-                                request.getUserId().toString()
-                                
-                        );
-                    } else {
-                        throw new UnsupportedOperationException("Only API parser supported currently for Indeed.");
-                    }
-                }
-                case String s when s.startsWith("link") -> throw new UnsupportedOperationException("LinkedIn scraping not yet implemented");
-                case String s when s.startsWith("custom") -> throw new UnsupportedOperationException("Custom platform scraping not yet implemented");
-                default -> throw new IllegalArgumentException("Unsupported platform name: " + platform.getName());
-            };
+            String platformName = platform.getName().toLowerCase();
 
+            List<Job> jobsForPage;
+
+            if (platformName.startsWith("inde")) {
+                if (platform.getParserType().equals(ParserType.API)) {
+                    jobsForPage = indeedScraperService.scrapeIndeed(
+                            request.getQuery(),
+                            request.getLocation(),
+                            1,
+                            platform.getApiKey(),
+                            request.getUserId().toString()
+                    );
+                } else {
+                    throw new UnsupportedOperationException("Only API parser supported currently for Indeed.");
+                }
+            } else if (platformName.startsWith("link")) {
+                throw new UnsupportedOperationException("LinkedIn scraping not yet implemented");
+            } else if (platformName.startsWith("custom")) {
+                throw new UnsupportedOperationException("Custom platform scraping not yet implemented");
+            } else {
+                throw new IllegalArgumentException("Unsupported platform name: " + platform.getName());
+            }
+            
             allJobs.addAll(jobsForPage);
             log.info("📥 Scraped {} jobs on page {}/{}", jobsForPage.size(), page, maxPages);
 
