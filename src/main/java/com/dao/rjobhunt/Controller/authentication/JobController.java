@@ -4,6 +4,7 @@ package com.dao.rjobhunt.Controller.authentication;
 import com.dao.rjobhunt.Security.JwtService;
 import com.dao.rjobhunt.Service.ActionHistoryServices;
 import com.dao.rjobhunt.Service.JobService;
+import com.dao.rjobhunt.Service.NotificationServices;
 import com.dao.rjobhunt.dto.ApiResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,8 +29,11 @@ public class JobController {
 
     @Autowired
     private ActionHistoryServices actionHistoryServices;
+    
+    @Autowired
+    private NotificationServices notificationServices;
 
-    @Operation(summary = "Search live jobs", description = "Fetch live jobs with optional keyword, location, category, sort order, and pagination.")
+    @Operation(summary = "Search live jobs", description = "Fetch live jobs with optional keyword, location, category, sort order, and pagination. Optionally send notifications for top results.")
     @GetMapping
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public ResponseEntity<ApiResponse<JsonNode>> getLiveJobs(
@@ -37,17 +41,24 @@ public class JobController {
             @RequestParam(defaultValue = "Canada") String where,
             @RequestParam(defaultValue = "date") String sort_by,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(required = false) String category // ✅ NEW
-    ) {
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false, defaultValue = "false") boolean notify)
+  {
         String userId = jwtService.getPublicIdFromCurrentRequest();
 
         String effectiveKeyword = (keyword == null || keyword.trim().isEmpty()) ? "Software Engineer" : keyword;
 
         actionHistoryServices.addActionHistory(userId,
-                String.format("Searched jobs with keyword='%s', where='%s', category='%s', sort_by='%s', page=%d",
-                        effectiveKeyword, where, category != null ? category : "N/A", sort_by, page));
+                String.format("Searched jobs with keyword='%s', where='%s', category='%s', sort_by='%s', page=%d, notify=%b",
+                        effectiveKeyword, where, category != null ? category : "N/A", sort_by, page, notify));
 
-        JsonNode jobs = jobService.searchAdzunaJobs(effectiveKeyword, where, category, sort_by, page);
+//        JsonNode jobs = jobService.searchAdzunaJobs(effectiveKeyword, where, category, sort_by, page);
+        JsonNode jobs = jobService.searchAdzunaJobs(effectiveKeyword, where, category, sort_by, page, notify, userId);
+
+
+//        if (notify && page == 1 && jobs.has("results")) {
+//            jobService.notifyTopJobsToUser(jobs.get("results"), userId);
+//        }
 
         return ResponseEntity.ok(ApiResponse.success("Fetched live jobs successfully", jobs));
     }
