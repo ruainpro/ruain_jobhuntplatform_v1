@@ -1,13 +1,23 @@
 package com.dao.rjobhunt.Service;
 
+import com.dao.rjobhunt.models.Job;
 import com.fasterxml.jackson.databind.JsonNode;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class JobService {
 
     @Value("${adzuna.app-id}")
@@ -22,9 +32,15 @@ public class JobService {
     @Value("${adzuna.base-url}")
     private String baseUrl;
 
+    private final NotificationServices notificationServices;
+
     private final RestTemplate restTemplate = new RestTemplate();
 
     public JsonNode searchAdzunaJobs(String keyword, String where, String category, String sortBy, int page) {
+        return searchAdzunaJobs(keyword, where, category, sortBy, page, false, null);
+    }
+
+    public JsonNode searchAdzunaJobs(String keyword, String where, String category, String sortBy, int page, boolean notify, String userId) {
         logConfigValues();
 
         String url = String.format("%s/%s/search/%d", baseUrl, country, page);
@@ -33,32 +49,71 @@ public class JobService {
                 .queryParam("app_id", appId)
                 .queryParam("app_key", appKey)
                 .queryParam("results_per_page", 20)
-                .queryParam("what", keyword)   // ✅ flexible keyword search
+                .queryParam("what", keyword)
                 .queryParam("where", where)
                 .queryParam("sort_by", sortBy);
 
-        // ✅ Add category if provided
         if (category != null && !category.isBlank()) {
             builder.queryParam("category", category);
         }
 
-        String finalUrl = builder.toUriString();
-//        log.info("🔗 Requesting Adzuna API URL: {}", finalUrl);
-
         ResponseEntity<JsonNode> response = restTemplate.exchange(
-                finalUrl,
+                builder.toUriString(),
                 HttpMethod.GET,
                 new HttpEntity<>(new HttpHeaders()),
                 JsonNode.class
         );
 
-        JsonNode responseBody = response.getBody();
-//        log.info("✅ Adzuna API responded with status {} and {} results.",
-//                response.getStatusCode(), responseBody != null ? responseBody.path("count").asInt(-1) : -1);
+        JsonNode jobs = response.getBody();
 
-        return responseBody;
+        // ✅ Notify logic (if enabled)
+        if (notify && page == 1 && jobs != null && jobs.has("results")) {
+            JsonNode results = jobs.get("results");
+            List<Job> jobList = new ArrayList<>();
+
+            int count = 0;
+            for (JsonNode jobNode : results) {
+                if (count++ >= 50) break;
+
+                try {
+                    Job job = Job.builder()
+                            .title(jobNode.hasNonNull("title") ? jobNode.get("title").asText() : "No Title")
+                            .company(jobNode.has("company") && jobNode.get("company").has("display_name")
+                                    ? jobNode.get("company").get("display_name").asText()
+                                    : "Unknown")
+                            .location(jobNode.has("location") && jobNode.get("location").has("display_name")
+                                    ? jobNode.get("location").get("display_name").asText()
+                                    : "Unknown")
+                            .description(jobNode.has("description") ? jobNode.get("description").asText() : "")
+                            .url(jobNode.has("redirect_url") ? jobNode.get("redirect_url").asText() : "")
+                            .publicId(UUID.randomUUID())
+                            .build();
+
+                    jobList.add(job);
+
+                } catch (Exception e) {
+                    log.error("❌ Error parsing job from Adzuna: {}", e.getMessage(), e);
+                }
+            }
+
+            // ✅ Now notify the user with batch of jobs
+            if (!jobList.isEmpty()) {
+                try {
+                    notificationServices.sendNotificationsIfNotSent(
+                            UUID.fromString(userId),
+                            "scrapjob-notify-" + UUID.randomUUID(),
+                            "scrapjob",
+                            jobList
+                    );
+                } catch (Exception ex) {
+                    log.error("❌ Failed to notify user {}: {}", userId, ex.getMessage(), ex);
+                }
+            }
+        }
+
+        return jobs;
     }
-    
+
     public JsonNode fetchAdzunaCategories() {
         String url = String.format("%s/%s/categories", baseUrl, country);
 

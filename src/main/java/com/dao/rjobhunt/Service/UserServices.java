@@ -24,12 +24,18 @@ import com.dao.rjobhunt.dto.ApiResponse;
 import com.dao.rjobhunt.dto.UserDto;
 import com.dao.rjobhunt.models.AccountStatus;
 import com.dao.rjobhunt.models.ActionHistory;
+import com.dao.rjobhunt.models.Notification;
 import com.dao.rjobhunt.models.User;
 import com.dao.rjobhunt.others.RequestUtil;
 import com.dao.rjobhunt.repository.UserInfoRepository;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.mail.MessagingException;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+
 
 @Service
 public class UserServices {
@@ -48,6 +54,9 @@ public class UserServices {
 
 	@Value("${frontend.base.url}")
 	private String frontendBaseUrl;
+	
+	@Autowired
+	private MongoTemplate mongoTemplate;
 	
 	@Autowired
 	private RequestUtil requestUtil;
@@ -198,6 +207,74 @@ public class UserServices {
         user.getAccountStatus().setStatusId(updateValue);
         user.setUpdatedAt(java.time.LocalDateTime.now());
         return userInfoRepository.save(user);
+    }
+    
+	public List<String> addPreferredJobTitlesDynamically(UUID publicId, List<String> newTitles) {
+		Query query = new Query(Criteria.where("publicId").is(publicId));
+		User user = userInfoRepository.findByPublicId(publicId)
+				.orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+		List<String> current = user.getPreferredJobTitles();
+		if (current == null)
+			current = new java.util.ArrayList<>();
+
+		for (String title : newTitles) {
+			if (title != null && !current.contains(title.trim())) {
+				current.add(title.trim());
+			}
+		}
+
+		Update update = new Update().set("preferredJobTitles", current).set("updatedAt", LocalDateTime.now());
+
+		mongoTemplate.updateFirst(query, update, User.class);
+		return current;
+	}
+	
+	public List<String> deletePreferredJobTitlesDynamically(UUID publicId, String jobTitle) {
+	    Query query = new Query(Criteria.where("publicId").is(publicId));
+	    User user = userInfoRepository.findByPublicId(publicId)
+	            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+	    List<String> updatedList = user.getPreferredJobTitles();
+	    if (updatedList == null || updatedList.isEmpty()) {
+	        return List.of();
+	    }
+
+	    if (jobTitle == null) {
+	        // Delete all
+	        Update update = new Update()
+	            .set("preferredJobTitles", null)
+	            .set("updatedAt", LocalDateTime.now());
+	        mongoTemplate.updateFirst(query, update, User.class);
+	        return List.of();
+	    } else {
+	        updatedList.removeIf(title -> title.equalsIgnoreCase(jobTitle.trim()));
+	        Update update = new Update()
+	            .set("preferredJobTitles", updatedList)
+	            .set("updatedAt", LocalDateTime.now());
+	        mongoTemplate.updateFirst(query, update, User.class);
+	        return updatedList;
+	    }
+	}
+	
+    public Notification updateNotificationPreferences(UUID publicId, Notification newPrefs) {
+        Query query = new Query(Criteria.where("publicId").is(publicId));
+        Update update = new Update()
+                .set("notification", newPrefs)
+                .set("updatedAt", LocalDateTime.now());
+
+        mongoTemplate.updateFirst(query, update, User.class);
+
+        return newPrefs;
+    }
+
+    public boolean clearNotificationPreferences(UUID publicId) {
+        Query query = new Query(Criteria.where("publicId").is(publicId));
+        Update update = new Update()
+                .unset("notification")
+                .set("updatedAt", LocalDateTime.now());
+
+        return mongoTemplate.updateFirst(query, update, User.class).wasAcknowledged();
     }
 
 

@@ -26,10 +26,12 @@ import com.dao.rjobhunt.Service.ActionHistoryServices;
 import com.dao.rjobhunt.Service.UserServices;
 import com.dao.rjobhunt.dto.ApiResponse;
 import com.dao.rjobhunt.dto.UserDto;
+import com.dao.rjobhunt.models.Notification;
 import com.dao.rjobhunt.models.User;
 import com.dao.rjobhunt.repository.UserInfoRepository;
 
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.annotation.security.RolesAllowed;
 
 @RestController
 @RequestMapping("/api/users")
@@ -174,6 +176,86 @@ public class UserProfileController {
             return ResponseEntity.ok("Account status updated for user with publicId: " + updated.getPublicId());
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+    
+    // For user preference setting
+    
+    @Operation(summary = "Get preferred job titles of logged-in user")
+    @GetMapping("/preferences/job-titles")
+    public ResponseEntity<ApiResponse<List<String>>> getPreferredJobTitles() {
+        String publicId = jwtService.getPublicIdFromCurrentRequest();
+        User user = userServices.getUserByPublicId(UUID.fromString(publicId))
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        return ResponseEntity.ok(ApiResponse.success("Preferred job titles fetched", user.getPreferredJobTitles()));
+    }
+
+    @Operation(summary = "Add preferred job titles for logged-in user")
+    @PatchMapping("/preferences/job-titles")
+    public ResponseEntity<ApiResponse<List<String>>> addJobTitles(@RequestBody List<String> jobTitles) {
+        String publicId = jwtService.getPublicIdFromCurrentRequest();
+        List<String> result = userServices.addPreferredJobTitlesDynamically(UUID.fromString(publicId), jobTitles);
+        return ResponseEntity.ok(ApiResponse.success("Preferred job titles updated", result));
+    }
+
+    @Operation(summary = "Delete one or all preferred job titles for logged-in user")
+    @PatchMapping("/preferences/job-titles/delete")
+    public ResponseEntity<ApiResponse<List<String>>> deleteJobTitles(@RequestParam(required = false) String jobTitle) {
+        String publicId = jwtService.getPublicIdFromCurrentRequest();
+        List<String> result = userServices.deletePreferredJobTitlesDynamically(UUID.fromString(publicId), jobTitle);
+        return ResponseEntity.ok(ApiResponse.success("Preferred job titles updated", result));
+    }
+    
+    // For gettting, saving Notification preference
+    
+    @Operation(summary = "Get notification preferences for logged-in user")
+    @GetMapping("/preferences/notifications")
+    public ResponseEntity<ApiResponse<Notification>> getNotificationPreferences() {
+        String publicId = jwtService.getPublicIdFromCurrentRequest();
+        User user = userServices.getUserByPublicId(UUID.fromString(publicId))
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        return ResponseEntity.ok(ApiResponse.success("Notification preferences fetched", user.getNotification()));
+    }
+
+    @Operation(summary = "Update notification preferences for logged-in user")
+    @PatchMapping("/preferences/notifications")
+    public ResponseEntity<ApiResponse<Notification>> updateNotificationPreferences(@RequestBody Notification newPrefs) {
+        String publicId = jwtService.getPublicIdFromCurrentRequest();
+        Notification updated = userServices.updateNotificationPreferences(UUID.fromString(publicId), newPrefs);
+        return ResponseEntity.ok(ApiResponse.success("Notification preferences updated", updated));
+    }
+
+    @Operation(summary = "Delete notification preferences for logged-in user")
+    @PatchMapping("/preferences/notifications/delete")
+    public ResponseEntity<ApiResponse<String>> deleteNotificationPreferences() {
+        String publicId = jwtService.getPublicIdFromCurrentRequest();
+        boolean cleared = userServices.clearNotificationPreferences(UUID.fromString(publicId));
+        if (cleared) {
+            return ResponseEntity.ok(ApiResponse.success("Notification preferences deleted", null));
+        } else {
+            return ResponseEntity.status(500).body(ApiResponse.error("Failed to delete notification preferences"));
+        }
+    }
+
+    @Operation(summary = "Get notification preferences for any user by admin")
+    @RolesAllowed("ROLE_ADMIN")
+    @GetMapping("/admin/preferences/notifications")
+    public ResponseEntity<ApiResponse<Notification>> getUserNotificationPreferenceByAdmin(@RequestParam String publicId) {
+        User user = userServices.getUserByPublicId(UUID.fromString(publicId))
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        return ResponseEntity.ok(ApiResponse.success("Notification preferences fetched", user.getNotification()));
+    }
+
+    @Operation(summary = "Delete notification preferences for any user by admin")
+    @RolesAllowed("ROLE_ADMIN")
+    @PatchMapping("/admin/preferences/notifications/delete")
+    public ResponseEntity<ApiResponse<String>> adminDeleteNotificationPreferences(@RequestParam String publicId) {
+        boolean cleared = userServices.clearNotificationPreferences(UUID.fromString(publicId));
+        if (cleared) {
+            return ResponseEntity.ok(ApiResponse.success("Notification preferences deleted for user " + publicId, null));
+        } else {
+            return ResponseEntity.status(500).body(ApiResponse.error("Failed to delete notification preferences"));
         }
     }
 
