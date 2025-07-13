@@ -36,12 +36,12 @@ public class NotificationSender {
             }
 
             if (prefs.isSmsEnabled() && prefs.getPhoneNumber() != null) {
-//                 smsService.sendJobAlert(prefs.getPhoneNumber(), jobs);
+                 smsService.sendJobAlert(prefs.getPhoneNumber(), jobs);
                 notified = true;
             }
 
             if (prefs.isDiscordEnabled() && prefs.getDiscordWebhook() != null) {
-                // discordService.sendJobAlert(prefs.getDiscordWebhook(), jobs);
+                 discordService.sendJobAlert(prefs.getDiscordWebhook(), jobs);
                 notified = true;
             }
 
