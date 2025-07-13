@@ -1,0 +1,8 @@
+package com.dao.rjobhunt.Service;
+
+import org.springframework.stereotype.Service;
+
+@Service
+public class SMSService {
+
+}

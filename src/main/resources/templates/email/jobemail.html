@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🌈 Job Alert - RuAin Browser Preview</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    /* Animated gradient background */
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(-45deg, #1a1a1a, #202020, #2e2e2e, #1f1f1f);
+      background-size: 400% 400%;
+      animation: gradientMove 12s ease infinite;
+      font-family: 'Segoe UI', 'Roboto', sans-serif;
+      color: #f0f0f0;
+    }
+
+    @keyframes gradientMove {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 60px auto;
+      background: rgba(20, 20, 20, 0.96);
+      border-radius: 18px;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.1), 0 0 80px rgba(255, 255, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+    }
+
+    .header {
+      padding: 32px;
+      background: linear-gradient(120deg, #222, #2c2c2c);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      text-align: center;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 26px;
+      color: #ffdd57;
+      letter-spacing: 1px;
+      text-shadow: 1px 1px 4px #000;
+    }
+
+    .body {
+      padding: 30px;
+    }
+
+    .body p {
+      font-size: 16px;
+      line-height: 1.7;
+      color: #cccccc;
+    }
+
+    .job-card {
+      margin-top: 28px;
+      background: #2a2a2e;
+      padding: 22px 26px;
+      border-radius: 14px;
+      border: 1px solid #3c3c3c;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 10px rgba(255, 255, 0, 0.1);
+    }
+
+    .job-card:hover {
+      border-color: #ffcc00;
+      box-shadow: 0 0 20px #ffcc0077, 0 0 30px #ffcc0033;
+    }
+
+    .job-card h2 {
+      margin: 0 0 10px;
+      font-size: 20px;
+      color: #ffffff;
+    }
+
+    .job-card p {
+      margin: 6px 0;
+      font-size: 15px;
+      color: #bbbbbb;
+    }
+
+    .btn {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 12px 22px;
+      background-color: #ffcc00;
+      color: #1c1c1e;
+      font-weight: bold;
+      font-size: 14px;
+      text-decoration: none;
+      border-radius: 8px;
+      transition: background 0.3s ease;
+      box-shadow: 0 0 8px #ffcc00aa;
+    }
+
+    .btn:hover {
+      background-color: #ffe066;
+      box-shadow: 0 0 20px #ffe066aa;
+    }
+
+    .sent-date {
+      margin-top: 16px;
+      text-align: right;
+      font-size: 13px;
+      color: #999999;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 13px;
+      color: #888;
+      background: #181818;
+    }
+
+    .footer a {
+      color: #bbb;
+      text-decoration: underline;
+      margin: 0 6px;
+    }
+
+    @media (max-width: 640px) {
+      .body, .job-card { padding: 20px; }
+      .btn { padding: 10px 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>✨ Your Curated Job Matches</h1>
+    </div>
+
+    <div class="body">
+		<p>Hello <strong th:text="${USER_NAME}">User</strong>,</p>
+		<p>We’ve found the following jobs that match your preferences. Check them out below:</p>
+
+		<!-- ✅ Start looping jobs -->
+		<div th:each="job : ${JOBS}" class="job-card">
+			<h2 th:text="${job.title}">Job Title</h2>
+			<p><strong>Company:</strong> <span th:text="${job.company}">Company</span></p>
+			<p><strong>Location:</strong> <span th:text="${job.location}">Location</span></p>
+			<p><strong>Salary:</strong>
+				<span th:text="${job.salary != null && job.salary ne '' ? job.salary : 'Not Specified'}">Salary</span>
+			</p>
+			<p><strong>Description:</strong>
+				<span th:text="${#strings.abbreviate(job.description, 200)}">Description</span>
+			</p>
+			<a class="btn" th:href="${job.url}" target="_blank">View Job & Apply</a>
+			<div class="sent-date">📅 Sent On: <span th:text="${SENT_DATE}">Date</span></div>
+		</div>
+		<!-- ✅ End loop -->
+		
+		<p style="margin-top: 30px;">— Team RuAin JobHunt</p>
+    </div>
+
+    <div class="footer">
+      &copy; 2025 RuAin JobHunt • <a href="#">Unsubscribe</a> • <a href="#">Update Preferences</a>
+    </div>
+  </div>
+</body>
+</html>
