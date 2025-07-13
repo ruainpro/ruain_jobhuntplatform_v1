@@ -151,7 +151,7 @@ public class NotificationServices {
                 notified = true;
             }
             if (prefs.isDiscordEnabled() && prefs.getDiscordWebhook() != null) {
-                // discordService.sendJobAlert(prefs.getDiscordWebhook(), jobList);
+                 discordService.sendJobAlert(prefs.getDiscordWebhook(), jobList);
                 notified = true;
             }
 
