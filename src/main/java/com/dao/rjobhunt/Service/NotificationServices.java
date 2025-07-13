@@ -147,7 +147,7 @@ public class NotificationServices {
                 notified = true;
             }
             if (prefs.isSmsEnabled() && prefs.getPhoneNumber() != null) {
-                // smsService.sendJobAlert(prefs.getPhoneNumber(), jobList);
+                 smsService.sendJobAlert(prefs.getPhoneNumber(), jobList);
                 notified = true;
             }
             if (prefs.isDiscordEnabled() && prefs.getDiscordWebhook() != null) {

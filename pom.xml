@@ -81,6 +81,13 @@
 			<artifactId>spring-ai-starter-model-openai</artifactId>
 		</dependency>
 
+<!-- Spring AIpom.xml -->
+			<dependency>
+			    <groupId>com.twilio.sdk</groupId>
+			    <artifactId>twilio</artifactId>
+			    <version>11.0.0-rc.2</version>
+			</dependency>
+
 		<!-- JWT -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
