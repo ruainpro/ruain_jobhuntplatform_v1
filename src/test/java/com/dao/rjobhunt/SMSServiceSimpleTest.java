@@ -18,9 +18,6 @@ public class SMSServiceSimpleTest {
     public void testSendJobAlertWithValidJobList() {
 
 //         Inject test credentials (should be dummy in test env)
-//        smsService.setAccountSid("AC02f3af1ac83d9e4784da7a83d483551a");
-//        smsService.setAuthToken("405c3c0caa342b4612e3ef849ff5d835");
-//        smsService.setFromNumber("+16474491794");  // Your Twilio number
 
         Job job = Job.builder()
                 .title("Java Developer")
