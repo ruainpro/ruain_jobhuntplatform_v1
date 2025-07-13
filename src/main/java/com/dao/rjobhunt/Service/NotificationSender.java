@@ -36,7 +36,7 @@ public class NotificationSender {
             }
 
             if (prefs.isSmsEnabled() && prefs.getPhoneNumber() != null) {
-                // smsService.sendJobAlert(prefs.getPhoneNumber(), jobs);
+//                 smsService.sendJobAlert(prefs.getPhoneNumber(), jobs);
                 notified = true;
             }
 
