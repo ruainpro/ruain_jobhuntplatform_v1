@@ -36,6 +36,11 @@ public class AdminReportController {
     public ResponseEntity<Long> getTotalUsers() {
         return ResponseEntity.ok(reportService.getTotalRegisteredUsers());
     }
+    
+    @GetMapping("/platforms/total")
+    public ResponseEntity<Long> getTotalPlatform() {
+        return ResponseEntity.ok(reportService.getTotalPlatform());
+    }
 
     @GetMapping("/users/status")
     public ResponseEntity<Map<String, Long>> getActiveVsInactiveUsers() {

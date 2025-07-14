@@ -49,6 +49,8 @@ public class ScraperRequest {
 
     @Schema(description = "User-defined profile keywords to personalize job relevance scoring (e.g., ['Java', 'Microservices'])", example = "[\"Java\",\"Spring Boot\"]")
     private List<@NotBlank(message = "Profile keywords must not contain blank values") String> profileKeywords;
+    
+    private boolean notify; // 👈 Add this field + getter/setter
 
     @Schema(description = "Optional tags indicating specific preferences or industries of interest (e.g., ['FinTech', 'AI'])", example = "[\"FinTech\",\"AI\"]")
     private List<@NotBlank(message = "Tags must not contain blank values") String> tags;
