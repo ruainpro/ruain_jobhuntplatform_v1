@@ -11,4 +11,7 @@ public interface UserNotificationFeedRepository extends MongoRepository<UserNoti
     List<UserNotificationFeed> findByUserId(UUID userId);
 
     boolean existsByUserIdAndRequestId(UUID userId, String requestId);
+
+	long countByLimited(boolean b);
+
 }

@@ -52,6 +52,12 @@ public class JobService {
                 .queryParam("what", keyword)
                 .queryParam("where", where)
                 .queryParam("sort_by", sortBy);
+        
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Accept", "application/json");
+        headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36");
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
 
         if (category != null && !category.isBlank()) {
             builder.queryParam("category", category);
@@ -60,7 +66,7 @@ public class JobService {
         ResponseEntity<JsonNode> response = restTemplate.exchange(
                 builder.toUriString(),
                 HttpMethod.GET,
-                new HttpEntity<>(new HttpHeaders()),
+                entity,
                 JsonNode.class
         );
 
@@ -114,6 +120,23 @@ public class JobService {
         return jobs;
     }
 
+//    public JsonNode fetchAdzunaCategories() {
+//        String url = String.format("%s/%s/categories", baseUrl, country);
+//
+//        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(url)
+//                .queryParam("app_id", appId)
+//                .queryParam("app_key", appKey);
+//
+//        ResponseEntity<JsonNode> response = restTemplate.exchange(
+//                builder.toUriString(),
+//                HttpMethod.GET,
+//                new HttpEntity<>(new HttpHeaders()),
+//                JsonNode.class
+//        );
+//
+//        return response.getBody();
+//    }
+    
     public JsonNode fetchAdzunaCategories() {
         String url = String.format("%s/%s/categories", baseUrl, country);
 
@@ -121,10 +144,16 @@ public class JobService {
                 .queryParam("app_id", appId)
                 .queryParam("app_key", appKey);
 
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Accept", "application/json");
+        headers.set("User-Agent", "Mozilla/5.0"); // Mimics browser
+
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
         ResponseEntity<JsonNode> response = restTemplate.exchange(
                 builder.toUriString(),
                 HttpMethod.GET,
-                new HttpEntity<>(new HttpHeaders()),
+                entity,
                 JsonNode.class
         );
 
