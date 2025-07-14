@@ -135,6 +135,10 @@ public List<UserGrowthDto> aggregateUserGrowth(String startDateStr, String endDa
     public Long getTotalRegisteredUsers() {
         return userRepo.count();
     }
+    
+    public Long getTotalPlatform() {
+        return platformRepo.count();
+    }
 
     public Map<String, Long> getActiveInactiveUsers() {
         long active = userRepo.countByAccountStatus_StatusId(1);

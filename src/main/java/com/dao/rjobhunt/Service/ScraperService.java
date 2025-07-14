@@ -31,6 +31,9 @@ public class ScraperService {
     private final PlatformRepository platformRepo;
     private final ScraperRequestRepository scraperRequestRepo;
     private final IndeedScraperService indeedScraperService;
+    
+    @Autowired
+    private NotificationServices notificationServices;
 
 //    private final JwtService jwtService;
 //    private final ActionHistoryServices actionHistoryServices;
@@ -77,6 +80,19 @@ public class ScraperService {
                     lastScrapedJobs = scrapedJobs;
                     actionHistoryServices.addActionHistory(userId, "[Scraper] Finished scraping with " + scrapedJobs.size() + " jobs");
                     log.info("✅ [Scraper] Finished scraping {} jobs for user {}", scrapedJobs.size(), userId);
+                    
+                    if (request.isNotify() && !scrapedJobs.isEmpty()) {
+                        try {
+                            notificationServices.sendNotificationsIfNotSent(
+                                    UUID.fromString(userId),
+                                    "scrapjob-notify-" + UUID.randomUUID(),
+                                    "scrapjob",
+                                    scrapedJobs
+                            );
+                        } catch (Exception ex) {
+                            log.error("❌ Failed to notify user {}: {}", userId, ex.getMessage(), ex);
+                        }
+                    }
 
                 } catch (InterruptedException ex) {
                     log.warn("🛑 Scraping task interrupted for user {}", userId);
